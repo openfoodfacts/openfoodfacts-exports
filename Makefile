@@ -143,3 +143,6 @@ guard-%: # guard clause for targets that require an environment variable (usuall
    		echo use "make ${MAKECMDGOALS} $*=you-args"; \
    		exit 1; \
 	fi;
+
+cli: guard-args
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler python -m openfoodfacts_exports ${args}
