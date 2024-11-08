@@ -10,7 +10,7 @@ from openfoodfacts_exports import settings
 logger = logging.getLogger(__name__)
 
 MOBILE_APP_DUMP_DATASET_PATH = (
-    settings.DATASET_DIR / "en.openfoodfacts.org.products.csv"
+    settings.DATASET_DIR / "openfoodfacts-mobile-dump-products.tsv.gz"
 )
 
 MOBILE_APP_DUMP_SQL_QUERY = r"""
@@ -37,7 +37,7 @@ def generate_mobile_app_dump(parquet_path: Path, output_path: Path) -> None:
         raise FileNotFoundError(f"{str(parquet_path)} was not found.")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_file_path = Path(tmp_dir) / "mobile_dump.csv"
+        tmp_file_path = Path(tmp_dir) / "mobile_dump.csv.gz"
         query = MOBILE_APP_DUMP_SQL_QUERY.replace(
             "{dataset_path}", str(parquet_path)
         ).replace("{output_path}", str(tmp_file_path))
