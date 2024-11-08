@@ -26,15 +26,16 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ------------------------
 FROM python-base AS runtime
 WORKDIR /app
-COPY --from=builder-base /app/.venv /app/.venv
+COPY --from=builder-base --chown=off:off /app/.venv /app/.venv
 
 # create off user
 ARG OFF_UID=1000
 ARG OFF_GID=$OFF_UID
 RUN groupadd -g $OFF_GID off && \
-    useradd -u $OFF_UID -g off -m off
+    useradd -u $OFF_UID -g off -m off && \
+    mkdir -p /app/datasets && \
+    chown off:off -R /app
 
-RUN chown off:off -R /app
 COPY --chown=off:off openfoodfacts_exports /app/openfoodfacts_exports
 
 USER off
