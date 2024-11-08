@@ -12,7 +12,7 @@ from openfoodfacts_exports.workers.queues import high_queue
 def export_job(flavor: Flavor) -> None:
     """Download the JSONL dataset and launch exports through new rq jobs."""
     dataset_path = get_dataset(
-        flavor=flavor, dataset_type=DatasetType.jsonl, force_download=True
+        flavor=flavor, dataset_type=DatasetType.jsonl, download_newer=True
     )
 
     if flavor is Flavor.off:
