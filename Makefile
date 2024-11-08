@@ -96,11 +96,11 @@ docs:
 	@echo "🥫 Generationg doc…"
 	${DOCKER_COMPOSE} run --rm --no-deps api ./build_mkdocs.sh
 
-checks: create_external_networks toml-check flake8 black-check mypy isort-check docs
+checks: toml-check flake8 black-check mypy isort-check docs
 
 lint: toml-lint isort black
 
-tests: create_external_networks i18n-compile unit-tests integration-tests
+tests: unit-tests
 
 quality: lint checks tests
 
@@ -108,7 +108,7 @@ unit-tests:
 	@echo "🥫 Running tests …"
 	# run tests in worker to have more memory
 	# also, change project name to run in isolation
-	${DOCKER_COMPOSE_TEST} run --rm scheduler pytest --cov-report xml --cov=openfoodfacts_exports tests/unit
+	${DOCKER_COMPOSE_TEST} run --rm scheduler pytest --cov-report xml:.cov/coverage.xml --cov-report html:.cov/html --cov=openfoodfacts_exports tests/unit
 
 # interactive testings
 # usage: make pytest args='test/unit/my-test.py --pdb'

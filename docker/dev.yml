@@ -13,6 +13,7 @@ x-app-dev: &app-dev
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
       # make tests available
+      - ./tests:/app/tests
       - ./.cov:/app/.cov
 
 services:
