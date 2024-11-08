@@ -14,8 +14,6 @@ jobs:
     strategy:
       matrix:
         env:
-          # FIXME name you envs, see reuse below
-          # it's also the name of the directory for the application
           - ${{ startsWith(github.ref, 'refs/tags/v') && 'off-exports-org' || 'off-exports-net' }}
     environment: ${{ matrix.env }}
     concurrency: ${{ matrix.env }}
