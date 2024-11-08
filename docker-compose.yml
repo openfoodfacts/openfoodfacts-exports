@@ -47,7 +47,7 @@ services:
       REDIS_ARGS: --save 60 1000 --appendonly yes
     mem_limit: 4g
     ports:
-      - "${REDIS_EXPOSE:-127.0.0.1:6379}:6379"
+      - "6379"
 
 volumes:
   # Volume mount on /tmp to prevent large docker layer overlay
