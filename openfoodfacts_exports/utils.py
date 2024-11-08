@@ -1,5 +1,4 @@
 import logging
-import os
 
 import sentry_sdk
 import toml
@@ -8,13 +7,9 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 
 from openfoodfacts_exports import settings
 
-# Sentry for error reporting
-_sentry_dsn = os.environ.get("SENTRY_DSN")
-_environment = os.environ.get("ENVIRONMENT", "dev")
-
 
 def init_sentry(integrations: list[Integration] | None = None):
-    if _sentry_dsn:
+    if settings.SENTRY_DSN:
         integrations = integrations or []
         integrations.append(
             LoggingIntegration(
@@ -23,12 +18,12 @@ def init_sentry(integrations: list[Integration] | None = None):
             )
         )
         sentry_sdk.init(
-            _sentry_dsn,
-            environment=_environment,
+            settings.SENTRY_DSN,
+            environment=settings.ENVIRONMENT,
             integrations=integrations,
             release=get_package_version(),
         )
-    elif _environment == "prod":
+    elif settings.ENVIRONMENT == "prod":
         raise ValueError("No SENTRY_DSN specified for production openfoodfacts-exports")
 
 

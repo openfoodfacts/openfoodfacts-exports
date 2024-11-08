@@ -13,7 +13,9 @@ x-service-base:
 
 x-service-base-env:
   &service-base-env
+  ENVIRONMENT:
   REDIS_HOST:
+  ENABLE_HF_PUSH:
   HF_TOKEN: # Hugging Face token to push to the dataset hub
 
 

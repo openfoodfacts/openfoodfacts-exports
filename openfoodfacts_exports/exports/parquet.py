@@ -163,7 +163,12 @@ def export_parquet(dataset_path: Path, output_path: Path) -> None:
         )
         # Copy dataset file to datasets directory
         tmp_file_path.rename(output_path)
-    push_parquet_file_to_hf(data_path=output_path)
+
+    if settings.ENABLE_HF_PUSH:
+        push_parquet_file_to_hf(data_path=output_path)
+    else:
+        logger.info("Hugging Face push is disabled.")
+
     logger.info("JSONL to Parquet conversion completed.")
 
 
