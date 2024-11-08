@@ -2,6 +2,7 @@ x-base-volumes:
   &base-volumes
   - home_cache:/home/off/.cache
   - tmp:/tmp
+  - datasets:/app/datasets
 
 x-service-base:
   &service-base
@@ -55,6 +56,8 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-off_exports}_cache
   redis-data:
     name: ${COMPOSE_PROJECT_NAME:-off_exports}_redis-data
+  datasets:
+    name: ${COMPOSE_PROJECT_NAME:-off_exports}_datasets
 
 networks:
   default:

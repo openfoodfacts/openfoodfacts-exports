@@ -1,7 +1,11 @@
 from openfoodfacts import get_dataset
 from openfoodfacts.types import DatasetType, Flavor
 
-from openfoodfacts_exports.exports.parquet import export_parquet
+from openfoodfacts_exports.exports.csv import (
+    MOBILE_APP_DUMP_DATASET_PATH,
+    generate_mobile_app_dump,
+)
+from openfoodfacts_exports.exports.parquet import PARQUET_DATASET_PATH, export_parquet
 from openfoodfacts_exports.workers.queues import high_queue
 
 
@@ -11,4 +15,14 @@ def download_dataset_job(flavor: Flavor) -> None:
     )
 
     if flavor is Flavor.off:
-        high_queue.enqueue(export_parquet, dataset_path)
+        export_parquet_job = high_queue.enqueue(
+            export_parquet,
+            dataset_path,
+            PARQUET_DATASET_PATH,
+        )
+        high_queue.enqueue(
+            generate_mobile_app_dump,
+            PARQUET_DATASET_PATH,
+            MOBILE_APP_DUMP_DATASET_PATH,
+            depends_on=export_parquet_job,
+        )

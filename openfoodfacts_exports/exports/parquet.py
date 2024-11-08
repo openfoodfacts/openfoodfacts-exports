@@ -5,8 +5,12 @@ from pathlib import Path
 import duckdb
 from huggingface_hub import HfApi
 
+from openfoodfacts_exports import settings
+
 logger = logging.getLogger(__name__)
 
+
+PARQUET_DATASET_PATH = settings.DATASET_DIR / "openfoodfacts-products.parquet"
 
 SQL_QUERY = r"""
 SET threads to 4;
@@ -19,6 +23,7 @@ COPY (
         allergens_from_ingredients,
         allergens_from_user,
         allergens_tags,
+        brands,
         brands_tags,
         categories_properties_tags,
         categories,
@@ -147,14 +152,19 @@ COPY (
 """
 
 
-def export_parquet(dataset_path: Path) -> None:
+def export_parquet(dataset_path: Path, output_path: Path) -> None:
     """Convert a JSONL dataset to Parquet format and push it to Hugging Face
     Hub."""
-    logger.info("Starting conversion of JSONL to Parquet (to HF)")
+    logger.info("Starting conversion of JSONL to Parquet")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        file_path = Path(tmp_dir) / "converted_data.parquet"
-        convert_jsonl_to_parquet(output_file_path=file_path, dataset_path=dataset_path)
-        push_parquet_file_to_hf(data_path=file_path)
+        tmp_file_path = Path(tmp_dir) / "converted_data.parquet"
+        convert_jsonl_to_parquet(
+            output_file_path=tmp_file_path, dataset_path=dataset_path
+        )
+        # Copy dataset file to datasets directory
+        tmp_file_path.rename(output_path)
+    push_parquet_file_to_hf(data_path=output_path)
+    logger.info("JSONL to Parquet conversion completed.")
 
 
 def convert_jsonl_to_parquet(
