@@ -1,4 +1,5 @@
 import logging
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -161,8 +162,8 @@ def export_parquet(dataset_path: Path, output_path: Path) -> None:
         convert_jsonl_to_parquet(
             output_file_path=tmp_file_path, dataset_path=dataset_path
         )
-        # Copy dataset file to datasets directory
-        tmp_file_path.rename(output_path)
+        # Move dataset file to output_path
+        shutil.move(tmp_file_path, output_path)
 
     if settings.ENABLE_HF_PUSH:
         push_parquet_file_to_hf(data_path=output_path)

@@ -1,4 +1,6 @@
 import logging
+import shutil
+import tempfile
 from pathlib import Path
 
 import duckdb
@@ -34,11 +36,13 @@ def generate_mobile_app_dump(parquet_path: Path, output_path: Path) -> None:
     if not parquet_path.exists():
         raise FileNotFoundError(f"{str(parquet_path)} was not found.")
 
-    query = MOBILE_APP_DUMP_SQL_QUERY.replace(
-        "{dataset_path}", str(parquet_path)
-    ).replace("{output_path}", str(output_path))
-    try:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_file_path = Path(tmp_dir) / "mobile_dump.csv"
+        query = MOBILE_APP_DUMP_SQL_QUERY.replace(
+            "{dataset_path}", str(parquet_path)
+        ).replace("{output_path}", str(tmp_file_path))
         duckdb.sql(query)
-    except duckdb.Error as e:
-        logger.error(f"Error executing query: {query}\nError message: {e}")
-        raise
+        # Move dataset file to output_path
+        shutil.move(tmp_file_path, output_path)
+
+    logger.info("Mobile app dump generation done")
