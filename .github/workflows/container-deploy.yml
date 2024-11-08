@@ -5,8 +5,8 @@ on:
     branches:
     - $default-branch
     - deploy-*
-  tags:
-    - v*.*.*
+    tags:
+      - v*.*.*
 
 jobs:
   deploy:
