@@ -27,6 +27,7 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
+        # a new GITHUB_TOKEN is generated automatically by Github for each workflow
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Docker meta
