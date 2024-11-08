@@ -2,6 +2,8 @@ import logging
 
 import sentry_sdk
 import toml
+from minio import Minio
+from minio.credentials import EnvAWSProvider
 from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -32,3 +34,8 @@ def get_package_version() -> str:
     return toml.load(str(settings.PROJECT_DIR / "pyproject.toml"))["tool"]["poetry"][
         "version"
     ]
+
+
+def get_minio_client() -> Minio:
+    """Return a Minio client with AWS credentials from environment."""
+    return Minio("s3.amazonaws.com", credentials=EnvAWSProvider())

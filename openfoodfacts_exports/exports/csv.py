@@ -6,6 +6,7 @@ from pathlib import Path
 import duckdb
 
 from openfoodfacts_exports import settings
+from openfoodfacts_exports.utils import get_minio_client
 
 logger = logging.getLogger(__name__)
 
@@ -46,3 +47,25 @@ def generate_mobile_app_dump(parquet_path: Path, output_path: Path) -> None:
         shutil.move(tmp_file_path, output_path)
 
     logger.info("Mobile app dump generation done")
+
+
+def generate_push_mobile_app_dump(parquet_path: Path) -> None:
+    """Generate mobile app dump from a Parquet dump and push it to AWS S3.
+
+    Args:
+        parquet_path (Path): Path to the parquet file to generate the mobile app dump
+        from.
+    """
+    generate_mobile_app_dump(parquet_path, MOBILE_APP_DUMP_DATASET_PATH)
+
+    if settings.ENABLE_S3_PUSH:
+        logger.info("Uploading mobile app dump to S3")
+        client = get_minio_client()
+        client.fput_object(
+            settings.AWS_S3_DATASET_BUCKET,
+            "openfoodfacts-mobile-dump-products.tsv.gz",
+            file_path=str(MOBILE_APP_DUMP_DATASET_PATH),
+        )
+        logger.info("Mobile app dump uploaded to S3")
+    else:
+        logger.info("S3 push is disabled, skipping upload of mobile app dump")

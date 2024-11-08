@@ -16,7 +16,10 @@ x-service-base-env:
   ENVIRONMENT:
   REDIS_HOST:
   ENABLE_HF_PUSH:
+  ENABLE_S3_PUSH:
   HF_TOKEN: # Hugging Face token to push to the dataset hub
+  AWS_ACCESS_KEY:
+  AWS_SECRET_KEY:
 
 
 services:

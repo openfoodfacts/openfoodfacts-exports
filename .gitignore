@@ -11,3 +11,6 @@ wheels/
 
 # VS Code
 *.code-workspace
+
+# local environment variables
+.envrc

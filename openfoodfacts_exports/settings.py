@@ -16,3 +16,7 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 
 ENABLE_HF_PUSH = int(os.getenv("ENABLE_HF_PUSH", "0"))
+
+ENABLE_S3_PUSH = int(os.getenv("ENABLE_S3_PUSH", "0"))
+
+AWS_S3_DATASET_BUCKET = os.getenv("AWS_S3_DATASET_BUCKET", "openfoodfacts-ds")
