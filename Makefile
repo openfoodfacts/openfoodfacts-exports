@@ -116,6 +116,19 @@ pytest: guard-args
 	@echo "🥫 Running test: ${args} …"
 	${DOCKER_COMPOSE_TEST} run --rm worker_1 poetry run pytest ${args}
 
+
+#------------#
+# Production #
+#------------#
+
+# Create all external volumes needed for production. Using external volumes is useful to prevent data loss (as they are not deleted when performing docker down -v)
+create_external_volumes:
+	@echo "🥫 Creating external volumes (production only) …"
+	docker volume create off_exports_tmp
+	docker volume create off_exports_cache
+	docker volume create off_exports_redis-data
+	docker volume create off_exports_datasets
+
 #---------#
 # Cleanup #
 #---------#

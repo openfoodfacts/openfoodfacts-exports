@@ -1,0 +1,13 @@
+volumes:
+  tmp:
+    name: ${COMPOSE_PROJECT_NAME:-off_exports}_tmp
+    external: true
+  home_cache:
+    name: ${COMPOSE_PROJECT_NAME:-off_exports}_cache
+    external: true
+  redis-data:
+    name: ${COMPOSE_PROJECT_NAME:-off_exports}_redis-data
+    external: true
+  datasets:
+    name: ${COMPOSE_PROJECT_NAME:-off_exports}_datasets
+    external: true
