@@ -18,5 +18,5 @@ The following exports are yet to migrate:
 - CSV (en, fr)
 - RDF (en, fr)
 - daily diffs
-- minimal export for mobile apps
 
+We're also considering to move JSONL and MongoDB exports from Product Opener to this service, so that Product Opener does not handle exports anymore.
