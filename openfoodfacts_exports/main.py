@@ -21,7 +21,9 @@ def launch_export(flavor: Flavor) -> None:
     from openfoodfacts.utils import get_logger
 
     from openfoodfacts_exports.tasks import export_job
+    from openfoodfacts_exports.utils import init_sentry
 
     # configure root logger
     get_logger()
+    init_sentry()
     export_job(flavor)
