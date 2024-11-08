@@ -1,3 +1,4 @@
+import gzip
 import tempfile
 from pathlib import Path
 
@@ -10,14 +11,14 @@ from openfoodfacts_exports.exports.csv import generate_mobile_app_dump
 def test_generate_mobile_app_dump_file_not_found():
     with pytest.raises(FileNotFoundError):
         generate_mobile_app_dump(
-            Path("/non/existent/path.parquet"), Path("/output/path.tsv")
+            Path("/non/existent/path.parquet"), Path("/output/path.tsv.gz")
         )
 
 
 def test_generate_mobile_app_dump_with_real_parquet():
     with tempfile.TemporaryDirectory() as tmpdir:
         parquet_path = Path(tmpdir) / "input.parquet"
-        output_path = Path(tmpdir) / "output.tsv"
+        output_path = Path(tmpdir) / "output.tsv.gz"
 
         # Create a DuckDB connection and insert data
         con = duckdb.connect()
@@ -25,11 +26,14 @@ def test_generate_mobile_app_dump_with_real_parquet():
             """CREATE TABLE test_table AS
                 SELECT *
                 FROM (VALUES 
-                        ('1234567890123', 'Muesli aux fruits', '500 g', 'Carrefour,Carrefour bio', 'a', 4, 'a'),
+                        ('1234567890123', 'Muesli aux fruits', '500 g',
+                        'Carrefour,Carrefour bio', 'a', 4, 'a'),
                         ('1234567890124', 'Banana', '1', 'Chiquita', 'b', 3, 'b'),
-                        ('1234567890125', 'Brown rice', '1 kg', 'Uncle Bens', 'c', 2, 'c')
+                        ('1234567890125', 'Brown rice', '1 kg', 'Uncle Bens', 'c',
+                        2, 'c')
                     ) 
-                AS t(code, product_name, quantity, brands, nutriscore_grade, nova_group, ecoscore_grade)
+                AS t(code, product_name, quantity, brands, nutriscore_grade, nova_group,
+                ecoscore_grade)
             """
         )
 
@@ -39,7 +43,7 @@ def test_generate_mobile_app_dump_with_real_parquet():
         generate_mobile_app_dump(parquet_path, output_path)
 
         assert output_path.exists()
-        with open(output_path, "r") as f:
+        with gzip.open(output_path, "rt") as f:
             lines = f.readlines()
             assert len(lines) == 4
             header = lines[0]
@@ -57,9 +61,9 @@ def test_generate_mobile_app_dump_with_real_parquet():
             ):
                 assert field_name in fields
 
-            assert (
-                lines[1].strip()
-                == "1234567890123\tMuesli aux fruits\t500 g\tCarrefour,Carrefour bio\ta\t4\ta"
+            assert lines[1].strip() == (
+                "1234567890123\tMuesli aux fruits\t500 g\tCarrefour,Carrefour bio"
+                "\ta\t4\ta"
             )
             assert lines[2].strip() == "1234567890124\tBanana\t1\tChiquita\tb\t3\tb"
             assert (
