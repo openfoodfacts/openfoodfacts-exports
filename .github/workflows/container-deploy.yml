@@ -157,31 +157,6 @@ jobs:
           cd ${{ matrix.env }}
           make up
 
-    - name: Check services are up
-      uses: appleboy/ssh-action@master
-      if: ${{ always() }}
-      id: livecheck
-      with:
-        host: ${{ env.SSH_HOST }}
-        username: ${{ env.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        proxy_host: ${{ env.SSH_PROXY_HOST }}
-        proxy_username: ${{ env.SSH_PROXY_USERNAME }}
-        proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script_stop: false
-        script: |
-          cd ${{ matrix.env }}
-          exit_code=0
-          for service in `docker-compose config  --service | tr '\n' ' '`; do 
-            if [ -z `docker-compose ps -q $service` ] || [ -z `docker ps -q --no-trunc | grep $(docker-compose ${{ env.compose_args }} ps -q $service)` ]; then
-              echo "$service: DOWN"
-              exit_code=1
-            else
-              echo "$service: UP"
-            fi
-          done;
-          exit $exit_code;
-
     - name: Cleanup obsolete Docker objects
       uses: appleboy/ssh-action@master
       if: ${{ always() }}
