@@ -36,7 +36,7 @@ jobs:
       run: |
         # configurations
         echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-        echo "ENABLE_HF_PUSH=0" >> $GITHUB_ENV
+        echo "ENABLE_HF_PUSH=1" >> $GITHUB_ENV
         echo "ENABLE_S3_PUSH=0" >> $GITHUB_ENV
         # deploy target
         echo "SSH_PROXY_HOST=45.147.209.254" >> $GITHUB_ENV
