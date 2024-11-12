@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.1.0...v0.1.1) (2024-11-12)
+
+
+### Bug Fixes
+
+* fix deployment & push dataset to Hugging Face ([#3](https://github.com/openfoodfacts/openfoodfacts-exports/issues/3)) ([b3c8f58](https://github.com/openfoodfacts/openfoodfacts-exports/commit/b3c8f58491007e3e8e6a4e266e1dacf90bcf02cf))
+
 ## 0.1.0 (2024-11-12)
 
 
