@@ -126,8 +126,8 @@ jobs:
           # Secrets
           echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
           echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
-          echo "HF_TOKEN=${{ secrets.AWS_ACCESS_KEY }}" >> .env
-          echo "HF_TOKEN=${{ secrets.AWS_SECRET_KEY }}" >> .env
+          echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env
+          echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env
 
     - name: Create Docker volumes
       uses: appleboy/ssh-action@master
