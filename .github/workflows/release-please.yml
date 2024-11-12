@@ -21,7 +21,7 @@ jobs:
         # So this is a personnal access token
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           release-type: python
-          package-name: robotoff
+          package-name: openfoodfacts_exports
           changelog-types: |
               [
               {"type":"feat","section":"Features","hidden":false},
