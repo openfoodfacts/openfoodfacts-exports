@@ -117,7 +117,7 @@ jobs:
           echo "RESTART_POLICY=always" >> .env
 
           # App environment variables
-          echo "ENVIRONMENT={{ env.ENVIRONMENT }}" >> .env
+          echo "ENVIRONMENT=${{ env.ENVIRONMENT }}" >> .env
           echo "REDIS_HOST=redis" >> .env
           echo "NUM_RQ_WORKERS=4" >> .env
           echo "ENABLE_HF_PUSH=${{ env.ENABLE_HF_PUSH }}" >> .env
