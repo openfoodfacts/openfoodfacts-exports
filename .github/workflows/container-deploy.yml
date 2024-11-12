@@ -36,7 +36,7 @@ jobs:
       run: |
         # configurations
         echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-        echo "ENABLE_HF_PUSH=0" >> $GITHUB_ENV
+        echo "ENABLE_HF_PUSH=1" >> $GITHUB_ENV
         echo "ENABLE_S3_PUSH=0" >> $GITHUB_ENV
         # deploy target
         echo "SSH_PROXY_HOST=45.147.209.254" >> $GITHUB_ENV
@@ -126,8 +126,8 @@ jobs:
           # Secrets
           echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
           echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
-          echo "HF_TOKEN=${{ secrets.AWS_ACCESS_KEY }}" >> .env
-          echo "HF_TOKEN=${{ secrets.AWS_SECRET_KEY }}" >> .env
+          echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env
+          echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env
 
     - name: Create Docker volumes
       uses: appleboy/ssh-action@master
