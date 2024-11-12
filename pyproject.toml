@@ -10,6 +10,7 @@ dependencies = [
     "huggingface-hub>=0.26.2",
     "minio>=7.2.10",
     "openfoodfacts>=1.1.5",
+    "pyarrow>=18.0.0",
     "pytz>=2024.2",
     "requests>=2.32.3",
     "rq>=2.0.0",

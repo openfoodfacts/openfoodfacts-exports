@@ -2,8 +2,12 @@ import logging
 import shutil
 import tempfile
 from pathlib import Path
+import json
 
 import duckdb
+import pyarrow as pa
+import pyarrow.parquet as pq
+from pydantic import BaseModel, model_validator
 from huggingface_hub import HfApi
 
 from openfoodfacts_exports import settings
@@ -152,18 +156,83 @@ COPY (
 ;
 """
 
+_SIZE_SCHEMA = pa.struct(
+    [
+        pa.field("h", pa.int32(), nullable=True),
+        pa.field("w", pa.int32(), nullable=True),
+    ]
+)
+
+IMAGES_DATATYPE = pa.list_(
+    pa.struct(
+        [
+            pa.field("key", pa.string(), nullable=True),
+            pa.field("imgid", pa.int32(), nullable=True),
+            pa.field(
+                "sizes",
+                pa.struct(
+                    [
+                        pa.field("100", _SIZE_SCHEMA, nullable=True),
+                        pa.field("200", _SIZE_SCHEMA, nullable=True),
+                        pa.field("400", _SIZE_SCHEMA, nullable=True),
+                        pa.field("full", _SIZE_SCHEMA, nullable=True),
+                    ]
+                ),
+                nullable=True,
+            ),
+            pa.field("uploaded_t", pa.int64(), nullable=True),
+            pa.field("uploader", pa.string(), nullable=True),
+        ]
+    )
+)
+
+ALLOWED_IMAGE_SIZE_KEYS = {"100", "200", "400", "full"}
+
+SCHEMAS = {"images": IMAGES_DATATYPE}
+
+
+class ImageSize(BaseModel):
+    h: int | None = None
+    w: int | None = None
+
+
+class Image(BaseModel):
+    """`Images` schema for postprocessing used for field postprocessing."""
+
+    key: str
+    sizes: dict[str, ImageSize]
+    uploaded_t: int | None = None
+    imgid: int | None = None
+    uploader: str | None = None
+
+    @model_validator(mode="after")
+    def ignore_extra_sizes(self):
+        """Literal doesn't accept extra values, returning an error in case of additional
+        keys.
+        """
+        self.sizes = {
+            k: v for k, v in self.sizes.items() if k in ALLOWED_IMAGE_SIZE_KEYS
+        }
+        return self
+
 
 def export_parquet(dataset_path: Path, output_path: Path) -> None:
     """Convert a JSONL dataset to Parquet format and push it to Hugging Face
-    Hub."""
+    Hub.
+    """
     logger.info("Starting conversion of JSONL to Parquet")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_file_path = Path(tmp_dir) / "converted_data.parquet"
+        tmp_converted_parquet_path = Path(tmp_dir) / "converted_data.parquet"
+        tmp_postprocessed_parquet_path = Path(tmp_dir) / "postprocessed_data.parquet"
         convert_jsonl_to_parquet(
-            output_file_path=tmp_file_path, dataset_path=dataset_path
+            output_file_path=tmp_converted_parquet_path, dataset_path=dataset_path
+        )
+        postprocess_parquet(
+            parquet_path=tmp_converted_parquet_path,
+            output_path=tmp_postprocessed_parquet_path,
         )
         # Move dataset file to output_path
-        shutil.move(tmp_file_path, output_path)
+        shutil.move(tmp_postprocessed_parquet_path, output_path)
 
     if settings.ENABLE_HF_PUSH:
         push_parquet_file_to_hf(data_path=output_path)
@@ -213,3 +282,63 @@ def push_parquet_file_to_hf(
         commit_message=commit_message,
     )
     logger.info(f"Data succesfully pushed to Hugging Face at {repo_id}")
+
+
+def postprocess_parquet(
+    parquet_path: Path, 
+    output_path: Path,
+    batch_size: int = 10000
+) -> None:
+    parquet_file = pq.ParquetFile(parquet_path)
+    updated_schema = update_schema(parquet_file.schema.to_arrow_schema())
+    with pq.ParquetWriter(output_path, schema=updated_schema) as writer:
+        for batch in parquet_file.iter_batches(batch_size=batch_size):
+            batch = postprocess_arrow_batch(batch)
+            writer.write_batch(batch)
+
+
+def update_schema(schema: pa.Schema) -> pa.Schema:
+    for field_name, field_datatype in SCHEMAS.items():
+        schema = _udpate_schema_by_field(
+            schema=schema, field_name=field_name, field_datatype=field_datatype
+        )
+    return schema
+
+
+def _udpate_schema_by_field(
+    schema: pa.Schema, field_name: str, field_datatype: pa.DataType
+) -> pa.schema:
+    field_index = schema.get_field_index(field_name)
+    schema = schema.remove(field_index)
+    schema = schema.insert(field_index, pa.field(field_name, field_datatype))
+    return schema
+
+
+def postprocess_arrow_batch(batch: pa.RecordBatch) -> pa.RecordBatch:
+    """Add new processing features here."""
+    batch = postprocess_images(batch)
+    return batch
+
+
+def postprocess_images(batch: pa.RecordBatch, datatype: pa.DataType = IMAGES_DATATYPE):
+    """The `Images` field is a nested JSON with inconsistent data type.
+    We extract and structure the data as a list of dict containing the key of each item.
+    Each item corresponds to one image information.
+    """
+    # Since the nested JSON was not recognized, it was converted to a string
+    images: list[dict | None] = [
+        json.loads(image) if image else None for image in batch["images"].to_pylist()
+    ]
+    postprocessed_images = [
+        [Image(key=key, **value).model_dump() for key, value in image.items()]
+        if image
+        else []
+        for image in images
+    ]
+    images_col_index = batch.schema.get_field_index("images")
+    batch = batch.set_column(
+        images_col_index,
+        pa.field("images", datatype),
+        pa.array(postprocessed_images, type=datatype),
+    )
+    return batch
