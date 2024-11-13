@@ -6,11 +6,10 @@ from pathlib import Path
 import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
-from pydantic import BaseModel, model_validator
 from huggingface_hub import HfApi
+from pydantic import BaseModel, model_validator
 
 from openfoodfacts_exports import settings
-from openfoodfacts_exports.utils import timer
 
 logger = logging.getLogger(__name__)
 
@@ -268,10 +267,7 @@ def convert_jsonl_to_parquet(
     try:
         duckdb.sql(query)
     except duckdb.Error as e:
-        logger.error(
-            "Error executing query: %s \nError message: %s",
-            query, e
-        )
+        logger.error("Error executing query: %s \nError message: %s", query, e)
         raise
     logger.info("JSONL successfully converted into Parquet file.")
 
@@ -300,7 +296,6 @@ def push_parquet_file_to_hf(
     logger.info("Data succesfully pushed to Hugging Face at %s", repo_id)
 
 
-@timer
 def postprocess_parquet(
     parquet_path: Path, output_path: Path, batch_size: int = 10000
 ) -> None:
