@@ -1,4 +1,5 @@
 import logging
+import time
 
 import sentry_sdk
 import toml
@@ -8,6 +9,9 @@ from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 from openfoodfacts_exports import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def init_sentry(integrations: list[Integration] | None = None):
@@ -37,3 +41,13 @@ def get_package_version() -> str:
 def get_minio_client() -> Minio:
     """Return a Minio client with AWS credentials from environment."""
     return Minio("s3.amazonaws.com", credentials=EnvAWSProvider())
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        timestamp= time.time()
+        output = func(*args, **kwargs)
+        latency = time.time() - timestamp
+        logger.info(f"Latency of {func.__name__}: {latency:.2f} seconds")
+        return output
+    return wrapper
