@@ -2,7 +2,6 @@ import logging
 import shutil
 import tempfile
 from pathlib import Path
-import json
 
 import duckdb
 import pyarrow as pa
@@ -11,6 +10,7 @@ from pydantic import BaseModel, model_validator
 from huggingface_hub import HfApi
 
 from openfoodfacts_exports import settings
+from openfoodfacts_exports.utils import timer
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +200,7 @@ class Image(BaseModel):
     """`Images` schema for postprocessing used for field postprocessing."""
 
     key: str
-    sizes: dict[str, ImageSize]
+    sizes: dict[str, ImageSize | None]
     uploaded_t: int | None = None
     imgid: int | None = None
     uploader: str | None = None
@@ -215,12 +215,25 @@ class Image(BaseModel):
         }
         return self
 
+    @model_validator(mode="before")
+    def parse_int_from_string(data: dict):
+        """Some int are considered as string like '"1517312996"', leading to
+        int parsing issues
+        """
+        imgid = data.get("imgid")
+        uploaded_t = data.get("uploaded_t")
+        if imgid and isinstance(imgid, str):
+            data.update({"imgid": imgid.strip('"')})
+        if uploaded_t and isinstance(uploaded_t, str):
+            data.update({"uploaded_t": uploaded_t.strip('"')})
+        return data
+
 
 def export_parquet(dataset_path: Path, output_path: Path) -> None:
     """Convert a JSONL dataset to Parquet format and push it to Hugging Face
     Hub.
     """
-    logger.info("Starting conversion of JSONL to Parquet")
+    logger.info("Start JSONL export to Parquet.")
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_converted_parquet_path = Path(tmp_dir) / "converted_data.parquet"
         tmp_postprocessed_parquet_path = Path(tmp_dir) / "postprocessed_data.parquet"
@@ -238,15 +251,14 @@ def export_parquet(dataset_path: Path, output_path: Path) -> None:
         push_parquet_file_to_hf(data_path=output_path)
     else:
         logger.info("Hugging Face push is disabled.")
-
-    logger.info("JSONL to Parquet conversion completed.")
+    logger.info("JSONL to Parquet conversion and postprocessing completed.")
 
 
 def convert_jsonl_to_parquet(
     output_file_path: Path,
     dataset_path: Path,
 ) -> None:
-    logger.info("Start JSONL to Parquet conversion process.")
+    logger.info("Start conversion from JSONL to Parquet.")
     if not dataset_path.exists():
         raise FileNotFoundError(f"{str(dataset_path)} was not found.")
     query = SQL_QUERY.replace("{dataset_path}", str(dataset_path)).replace(
@@ -284,17 +296,18 @@ def push_parquet_file_to_hf(
     logger.info(f"Data succesfully pushed to Hugging Face at {repo_id}")
 
 
+@timer
 def postprocess_parquet(
-    parquet_path: Path, 
-    output_path: Path,
-    batch_size: int = 10000
+    parquet_path: Path, output_path: Path, batch_size: int = 10000
 ) -> None:
+    logger.info("Start postprocessing parquet")
     parquet_file = pq.ParquetFile(parquet_path)
     updated_schema = update_schema(parquet_file.schema.to_arrow_schema())
     with pq.ParquetWriter(output_path, schema=updated_schema) as writer:
         for batch in parquet_file.iter_batches(batch_size=batch_size):
             batch = postprocess_arrow_batch(batch)
             writer.write_batch(batch)
+    logger.info("Parquet post processing done.")
 
 
 def update_schema(schema: pa.Schema) -> pa.Schema:
@@ -325,15 +338,11 @@ def postprocess_images(batch: pa.RecordBatch, datatype: pa.DataType = IMAGES_DAT
     We extract and structure the data as a list of dict containing the key of each item.
     Each item corresponds to one image information.
     """
-    # Since the nested JSON was not recognized, it was converted to a string
-    images: list[dict | None] = [
-        json.loads(image) if image else None for image in batch["images"].to_pylist()
-    ]
+    # Duckdb converted the json filed into a map_array:
+    # https://arrow.apache.org/docs/python/generated/pyarrow.MapArray.html#pyarrow-maparray
     postprocessed_images = [
-        [Image(key=key, **value).model_dump() for key, value in image.items()]
-        if image
-        else []
-        for image in images
+        [Image(key=key, **value).model_dump() for key, value in image] if image else []
+        for image in batch["images"].to_pylist()
     ]
     images_col_index = batch.schema.get_field_index("images")
     batch = batch.set_column(
