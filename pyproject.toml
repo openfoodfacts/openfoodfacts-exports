@@ -32,7 +32,6 @@ max-doc-length = 88
 [dependency-groups]
 dev = [
     "coverage[toml]>=7.6.4",
-    "ipykernel>=6.29.5",
     "pre-commit>=4.0.1",
     "pytest-cov>=6.0.0",
     "pytest>=8.3.3",
