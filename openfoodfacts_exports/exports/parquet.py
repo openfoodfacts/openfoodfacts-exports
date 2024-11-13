@@ -216,7 +216,8 @@ class Image(BaseModel):
         return self
 
     @model_validator(mode="before")
-    def parse_int_from_string(data: dict):
+    @classmethod
+    def parse_int_from_string(cls, data: dict):
         """Some int are considered as string like '"1517312996"', leading to
         int parsing issues
         """
@@ -267,7 +268,10 @@ def convert_jsonl_to_parquet(
     try:
         duckdb.sql(query)
     except duckdb.Error as e:
-        logger.error(f"Error executing query: {query}\nError message: {e}")
+        logger.error(
+            "Error executing query: %s \nError message: %s",
+            query, e
+        )
         raise
     logger.info("JSONL successfully converted into Parquet file.")
 
@@ -278,7 +282,7 @@ def push_parquet_file_to_hf(
     revision: str = "main",
     commit_message: str = "Database updated",
 ) -> None:
-    logger.info(f"Start pushing data to Hugging Face at {repo_id}")
+    logger.info("Start pushing data to Hugging Face at %s", repo_id)
     if not data_path.exists():
         raise FileNotFoundError(f"Data is missing: {data_path}")
     if data_path.suffix != ".parquet":
@@ -293,7 +297,7 @@ def push_parquet_file_to_hf(
         path_in_repo="products.parquet",
         commit_message=commit_message,
     )
-    logger.info(f"Data succesfully pushed to Hugging Face at {repo_id}")
+    logger.info("Data succesfully pushed to Hugging Face at %s", repo_id)
 
 
 @timer
@@ -312,13 +316,13 @@ def postprocess_parquet(
 
 def update_schema(schema: pa.Schema) -> pa.Schema:
     for field_name, field_datatype in SCHEMAS.items():
-        schema = _udpate_schema_by_field(
+        schema = _update_schema_by_field(
             schema=schema, field_name=field_name, field_datatype=field_datatype
         )
     return schema
 
 
-def _udpate_schema_by_field(
+def _update_schema_by_field(
     schema: pa.Schema, field_name: str, field_datatype: pa.DataType
 ) -> pa.schema:
     field_index = schema.get_field_index(field_name)
@@ -333,10 +337,16 @@ def postprocess_arrow_batch(batch: pa.RecordBatch) -> pa.RecordBatch:
     return batch
 
 
-def postprocess_images(batch: pa.RecordBatch, datatype: pa.DataType = IMAGES_DATATYPE):
+def postprocess_images(
+    batch: pa.RecordBatch, datatype: pa.DataType = IMAGES_DATATYPE
+) -> pa.RecordBatch:
     """The `Images` field is a nested JSON with inconsistent data type.
-    We extract and structure the data as a list of dict containing the key of each item.
-    Each item corresponds to one image information.
+    We extract and structure the data as a list of dict using Pydantic.
+    Each dict corresponds to an image from the same product.
+
+    ### Notes:
+    The process is quite long (20 - 30 min).
+    Possibilities: concurrency, pyarrow.compute, ...
     """
     # Duckdb converted the json filed into a map_array:
     # https://arrow.apache.org/docs/python/generated/pyarrow.MapArray.html#pyarrow-maparray
