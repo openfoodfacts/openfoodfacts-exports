@@ -225,7 +225,7 @@ class Image(BaseModel):
     """`Images` schema for postprocessing used for field postprocessing."""
 
     key: str | None = None
-    sizes: dict[str, ImageSize | None]
+    sizes: dict[str, ImageSize] | None = None
     uploaded_t: int | None = None
     imgid: int | None = None
     uploader: str | None = None
@@ -239,6 +239,15 @@ class Image(BaseModel):
             k: v for k, v in self.sizes.items() if k in ALLOWED_IMAGE_SIZE_KEYS
         }
         return self
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_sizes(cls, data: dict) -> dict:
+        sizes = data.pop("sizes", None)
+        if sizes:
+            sizes = {key: values for key, values in sizes.items() if values}
+        data["sizes"] = sizes or None
+        return data
 
 
 class Ingredient(BaseModel):
