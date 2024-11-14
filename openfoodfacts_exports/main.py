@@ -6,6 +6,7 @@ app = typer.Typer()
 
 @app.command()
 def run_scheduler():
+    """Run the scheduler, that will launch the export jobs once a day."""
     from openfoodfacts.utils import get_logger
 
     from openfoodfacts_exports.scheduler import run
@@ -13,6 +14,18 @@ def run_scheduler():
     # configure root logger
     get_logger()
     run()
+
+
+@app.command()
+def run_worker(queues: list[str], burst: bool = False):
+    """Run a worker for the given queues."""
+    from openfoodfacts.utils import get_logger
+
+    from openfoodfacts_exports.workers.main import run
+
+    # configure root logger
+    get_logger()
+    run(queues, burst)
 
 
 @app.command()

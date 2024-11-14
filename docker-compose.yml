@@ -35,7 +35,7 @@ services:
   workers:
     <<: *service-base
     environment: *service-base-env
-    command: rq worker --url redis://${REDIS_HOST:-redis}:6379 off-exports-high off-exports-low
+    command: python3 -m openfoodfacts_exports run-worker off-exports-high off-exports-low
     mem_limit: 4g
     depends_on:
       - redis
