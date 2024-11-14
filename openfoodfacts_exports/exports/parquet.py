@@ -88,7 +88,7 @@ PACKAGING_FIELD_DATATYPE = pa.list_(
     pa.struct(
         [
             pa.field("material", pa.string(), nullable=True),
-            pa.field("number_of_units", pa.int32(), nullable=True),
+            pa.field("number_of_units", pa.int64(), nullable=True),
             pa.field("quantity_per_unit", pa.string(), nullable=True),
             pa.field("quantity_per_unit_unit", pa.string(), nullable=True),
             pa.field("quantity_per_unit_value", pa.string(), nullable=True),
