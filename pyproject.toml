@@ -9,7 +9,9 @@ dependencies = [
     "duckdb==1.1.2",
     "huggingface-hub>=0.26.2",
     "minio>=7.2.10",
+    "more-itertools>=10.5.0",
     "openfoodfacts>=1.1.5",
+    "orjson>=3.10.11",
     "pyarrow>=18.0.0",
     "pytz>=2024.2",
     "requests>=2.32.3",
@@ -17,8 +19,6 @@ dependencies = [
     "sentry-sdk>=2.18.0",
     "toml>=0.10.2",
     "typer>=0.12.5",
-    "types-pytz>=2024.2.0.20241003",
-    "types-toml>=0.10.8.20240310",
 ]
 
 
@@ -32,9 +32,10 @@ max-doc-length = 88
 [dependency-groups]
 dev = [
     "coverage[toml]>=7.6.4",
-    "ipykernel>=6.29.5",
     "pre-commit>=4.0.1",
     "pytest-cov>=6.0.0",
     "pytest>=8.3.3",
     "ruff>=0.7.3",
+    "types-pytz>=2024.2.0.20241003",
+    "types-toml>=0.10.8.20240310",
 ]
