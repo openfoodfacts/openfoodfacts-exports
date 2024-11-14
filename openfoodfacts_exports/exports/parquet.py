@@ -235,9 +235,10 @@ class Image(BaseModel):
         """Literal doesn't accept extra values, returning an error in case of
         additional keys.
         """
-        self.sizes = {
-            k: v for k, v in self.sizes.items() if k in ALLOWED_IMAGE_SIZE_KEYS
-        }
+        if self.sizes:
+            self.sizes = {
+                k: v for k, v in self.sizes.items() if k in ALLOWED_IMAGE_SIZE_KEYS
+            }
         return self
 
     @model_validator(mode="before")
