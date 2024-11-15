@@ -100,7 +100,7 @@ checks: toml-check flake8 black-check mypy isort-check docs
 
 lint: toml-lint isort black
 
-tests: unit-tests
+tests: unit-tests integration-tests
 
 quality: lint checks tests
 
@@ -109,6 +109,10 @@ unit-tests:
 	# run tests in worker to have more memory
 	# also, change project name to run in isolation
 	${DOCKER_COMPOSE_TEST} run --rm scheduler pytest --cov-report xml:.cov/coverage.xml --cov-report html:.cov/html --cov=openfoodfacts_exports tests/unit
+
+integration-tests:
+	@echo "🥫 Running integration tests …"
+	${DOCKER_COMPOSE_TEST} run --rm scheduler pytest --cov-report xml:.cov/coverage.xml --cov-report html:.cov/html --cov=openfoodfacts_exports tests/integration ${args}
 
 # interactive testings
 # usage: make pytest args='test/unit/my-test.py --pdb'
