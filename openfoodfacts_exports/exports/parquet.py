@@ -575,6 +575,7 @@ def convert_jsonl_to_parquet(
     dataset_path: Path,
     schema: pa.Schema = PRODUCT_SCHEMA,
     batch_size: int = 1024,
+    row_group_size: int = 122_880,  # DuckDB default row group size
 ) -> None:
     """Convert the Open Food Facts JSONL dataset to Parquet format.
 
@@ -608,7 +609,7 @@ def convert_jsonl_to_parquet(
         record_batch = pa.record_batch(data, schema=schema)
         if writer is None:
             writer = pq.ParquetWriter(output_file_path, schema=record_batch.schema)
-        writer.write_batch(record_batch)
+        writer.write_batch(record_batch, row_group_size=row_group_size)
 
     if writer is not None:
         writer.close()
