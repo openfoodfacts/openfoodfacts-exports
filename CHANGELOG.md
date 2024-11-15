@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.1.1...v0.2.0) (2024-11-15)
+
+
+### Features
+
+* :fire: Postprocess parquet: images field ([#6](https://github.com/openfoodfacts/openfoodfacts-exports/issues/6)) ([48e21b3](https://github.com/openfoodfacts/openfoodfacts-exports/commit/48e21b35312ef63f9cc3f913d1a8854ce5e00a51))
+* declare the schema of the Parquet file ([#8](https://github.com/openfoodfacts/openfoodfacts-exports/issues/8)) ([309b4f7](https://github.com/openfoodfacts/openfoodfacts-exports/commit/309b4f73009424be65d712d2798f11bf7525d952))
+
+
+### Bug Fixes
+
+* add a validator to parse image sizes ([9dd2530](https://github.com/openfoodfacts/openfoodfacts-exports/commit/9dd25300b6d8c85004de39a1f1f36dab9f3e42fc))
+* fix ignore_extra_sizes method ([bcc0e9b](https://github.com/openfoodfacts/openfoodfacts-exports/commit/bcc0e9be40ac8800136b063be24d943c33c7ac8e))
+* increase job timeouts ([8b3b5cc](https://github.com/openfoodfacts/openfoodfacts-exports/commit/8b3b5cc420d404ae6effdc38892c330a0623e13b))
+* increase row_group_size for Parquet generation ([5aaefa5](https://github.com/openfoodfacts/openfoodfacts-exports/commit/5aaefa5ee68083c6a7ffc8e4b0dbcfccd1fa1174))
+* launch rq workers using CLI to init sentry ([2c7d0d7](https://github.com/openfoodfacts/openfoodfacts-exports/commit/2c7d0d76f16dd67cc2620f259c469a3a1afdf43e))
+* use int64 for number_of_units ([824effa](https://github.com/openfoodfacts/openfoodfacts-exports/commit/824effa6565dede6faf68b60d999f6e12c5e6681))
+
 ## [0.1.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.1.0...v0.1.1) (2024-11-12)
 
 
