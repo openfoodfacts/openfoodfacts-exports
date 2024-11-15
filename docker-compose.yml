@@ -36,7 +36,7 @@ services:
     <<: *service-base
     environment: *service-base-env
     command: python3 -m openfoodfacts_exports run-worker off-exports-high off-exports-low
-    mem_limit: 4g
+    mem_limit: 8g
     depends_on:
       - redis
     deploy:
