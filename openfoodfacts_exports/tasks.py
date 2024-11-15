@@ -22,11 +22,11 @@ def export_job(flavor: Flavor) -> None:
             export_parquet,
             dataset_path,
             PARQUET_DATASET_PATH,
-            job_timeout="1h",
+            job_timeout="3h",
         )
         high_queue.enqueue(
             generate_push_mobile_app_dump,
             PARQUET_DATASET_PATH,
             depends_on=export_parquet_job,
-            job_timeout="1h",
+            job_timeout="3h",
         )
