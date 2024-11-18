@@ -133,6 +133,7 @@ PRODUCT_SCHEMA = pa.schema(
         pa.field("data_quality_info_tags", pa.list_(pa.string()), nullable=True),
         pa.field("data_quality_warnings_tags", pa.list_(pa.string()), nullable=True),
         pa.field("data_sources_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("ecoscore_data", pa.string(), nullable=True),
         pa.field("ecoscore_grade", pa.string(), nullable=True),
         pa.field("ecoscore_score", pa.int32(), nullable=True),
         pa.field("ecoscore_tags", pa.list_(pa.string()), nullable=True),
@@ -361,6 +362,7 @@ class Product(BaseModel):
     data_quality_info_tags: list[str] | None = None
     data_quality_warnings_tags: list[str] | None = None
     data_sources_tags: list[str] | None = None
+    ecoscore_data: dict | None = None
     ecoscore_grade: str | None = None
     ecoscore_score: int | None = None
     ecoscore_tags: list[str] | None = None
@@ -585,6 +587,14 @@ class Product(BaseModel):
         if ingredients is None:
             return None
         return orjson.dumps([ing.model_dump() for ing in ingredients]).decode("utf-8")
+
+    @field_serializer("ecoscore_data")
+    def serialize_ecoscore_data(self, ecoscore_data: dict | None, _info) -> str | None:
+        """Ecoscore data is a complex structure, leave it as a JSON string for
+        now."""
+        if ecoscore_data is None:
+            return None
+        return orjson.dumps(ecoscore_data).decode("utf-8")
 
 
 def export_parquet(dataset_path: Path, output_path: Path) -> None:
