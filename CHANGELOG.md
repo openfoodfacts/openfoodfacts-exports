@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.2.1...v0.3.0) (2024-11-18)
+
+
+### Features
+
+* add new fields to Parquet dump ([#12](https://github.com/openfoodfacts/openfoodfacts-exports/issues/12)) ([51ab153](https://github.com/openfoodfacts/openfoodfacts-exports/commit/51ab153fda91397b367cfabac29a5a20613067a8))
+
+
+### Dependencies
+
+* upgrade openfoodfacts package ([#13](https://github.com/openfoodfacts/openfoodfacts-exports/issues/13)) ([2e01519](https://github.com/openfoodfacts/openfoodfacts-exports/commit/2e015195ad9bbd98c7551e89865b8d1440bfebb9))
+
 ## [0.2.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.2.0...v0.2.1) (2024-11-18)
 
 
