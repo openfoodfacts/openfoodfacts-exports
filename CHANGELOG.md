@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.2.0...v0.2.1) (2024-11-18)
+
+
+### Bug Fixes
+
+* add and update fields in parquet export ([#10](https://github.com/openfoodfacts/openfoodfacts-exports/issues/10)) ([5b99a3f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/5b99a3fc2860cb55502cbc6992056850b42e5810))
+
 ## [0.2.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.1.1...v0.2.0) (2024-11-15)
 
 
