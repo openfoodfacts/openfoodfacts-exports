@@ -6,6 +6,7 @@ from pathlib import Path
 import orjson
 import pyarrow as pa
 import pyarrow.parquet as pq
+import tqdm
 from huggingface_hub import HfApi
 from more_itertools import chunked
 from openfoodfacts.utils import jsonl_iter
@@ -99,6 +100,15 @@ PACKAGING_FIELD_DATATYPE = pa.list_(
     )
 )
 
+OWNER_FIELD_DATATYPE = pa.list_(
+    pa.struct(
+        [
+            pa.field("field_name", pa.string()),
+            pa.field("timestamp", pa.int64()),
+        ]
+    )
+)
+
 PRODUCT_SCHEMA = pa.schema(
     [
         pa.field("additives_n", pa.int32(), nullable=True),
@@ -180,6 +190,7 @@ PRODUCT_SCHEMA = pa.schema(
         pa.field("obsolete", pa.bool_()),
         pa.field("origins_tags", pa.list_(pa.string()), nullable=True),
         pa.field("origins", pa.string(), nullable=True),
+        pa.field("owner_fields", OWNER_FIELD_DATATYPE, nullable=True),
         pa.field("owner", pa.string(), nullable=True),
         pa.field("packagings_complete", pa.bool_(), nullable=True),
         pa.field("packaging_recycling_tags", pa.list_(pa.string()), nullable=True),
@@ -322,6 +333,11 @@ class PackagingField(BaseModel):
     weight_measured: float | None = None
 
 
+class OwnerField(BaseModel):
+    field_name: str
+    timestamp: int
+
+
 class Product(BaseModel):
     additives_n: int | None = None
     additives_tags: list[str] | None = None
@@ -400,6 +416,7 @@ class Product(BaseModel):
     origins_tags: list[str] | None = None
     origins: str | None = None
     owner: str | None = None
+    owner_fields: list[OwnerField] | None = None
     packagings_complete: bool | None = None
     packaging_recycling_tags: list[str] | None = None
     packaging_shapes_tags: list[str] | None = None
@@ -547,6 +564,17 @@ class Product(BaseModel):
 
         return data
 
+    @model_validator(mode="before")
+    @classmethod
+    def parse_owner_fields(cls, data: dict):
+        owner_fields = data.pop("owner_fields", None)
+        if owner_fields:
+            data["owner_fields"] = [
+                {"field_name": key, "timestamp": value}
+                for key, value in owner_fields.items()
+            ]
+        return data
+
     @field_serializer("ingredients")
     def serialize_ingredients(
         self, ingredients: list[Ingredient] | None, _info
@@ -585,7 +613,8 @@ def convert_jsonl_to_parquet(
     dataset_path: Path,
     schema: pa.Schema = PRODUCT_SCHEMA,
     batch_size: int = 1024,
-    row_group_size: int = 122_880,  # DuckDB default row group size
+    row_group_size: int = 122_880,  # DuckDB default row group size,
+    use_tqdm: bool = False,
 ) -> None:
     """Convert the Open Food Facts JSONL dataset to Parquet format.
 
@@ -595,6 +624,8 @@ def convert_jsonl_to_parquet(
         schema (pa.Schema): The schema of the Parquet file.
         batch_size (int, optional): The size of the batches used to convert the
             dataset. Defaults to 1024.
+        use_tqdm (bool, optional): Whether to use tqdm to display a progress
+            bar. Defaults to False.
     """
     writer = None
     DTYPE_MAP = {
@@ -602,7 +633,11 @@ def convert_jsonl_to_parquet(
         "nutriments": NUTRIMENTS_DATATYPE,
         "packagings": PACKAGING_FIELD_DATATYPE,
     }
-    for batch in chunked(jsonl_iter(dataset_path), batch_size):
+    item_iter = jsonl_iter(dataset_path)
+    if use_tqdm:
+        item_iter = tqdm.tqdm(item_iter, desc="JSONL")
+
+    for batch in chunked(item_iter, batch_size):
         # We use by_alias=True because some fields start with a digit
         # (ex: nutriments.100g), and we cannot declare the schema with
         # Pydantic without an alias.

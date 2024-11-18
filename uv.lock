@@ -493,7 +493,7 @@ wheels = [
 
 [[package]]
 name = "openfoodfacts-exports"
-version = "0.1.1"
+version = "0.2.1"
 source = { virtual = "." }
 dependencies = [
     { name = "apscheduler" },
@@ -509,6 +509,7 @@ dependencies = [
     { name = "rq" },
     { name = "sentry-sdk" },
     { name = "toml" },
+    { name = "tqdm" },
     { name = "typer" },
 ]
 
@@ -538,6 +539,7 @@ requires-dist = [
     { name = "rq", specifier = ">=2.0.0" },
     { name = "sentry-sdk", specifier = ">=2.18.0" },
     { name = "toml", specifier = ">=0.10.2" },
+    { name = "tqdm", specifier = ">=4.66.6" },
     { name = "typer", specifier = ">=0.12.5" },
 ]
 
