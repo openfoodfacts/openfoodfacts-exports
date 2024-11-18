@@ -131,7 +131,7 @@ PRODUCT_SCHEMA = pa.schema(
         pa.field("emb_codes", pa.string(), nullable=True),
         pa.field("entry_dates_tags", pa.list_(pa.string()), nullable=True),
         pa.field("food_groups_tags", pa.list_(pa.string()), nullable=True),
-        pa.field("generic_name", pa.string(), nullable=True),
+        pa.field("generic_name", LANGUAGE_FIELD_DATATYPE, nullable=True),
         pa.field("images", IMAGES_DATATYPE, nullable=True),
         pa.field("informers_tags", pa.list_(pa.string()), nullable=True),
         pa.field("ingredients_analysis_tags", pa.list_(pa.string()), nullable=True),
@@ -180,6 +180,7 @@ PRODUCT_SCHEMA = pa.schema(
         pa.field("obsolete", pa.bool_()),
         pa.field("origins_tags", pa.list_(pa.string()), nullable=True),
         pa.field("origins", pa.string(), nullable=True),
+        pa.field("owner", pa.string(), nullable=True),
         pa.field("packagings_complete", pa.bool_(), nullable=True),
         pa.field("packaging_recycling_tags", pa.list_(pa.string()), nullable=True),
         pa.field("packaging_shapes_tags", pa.list_(pa.string()), nullable=True),
@@ -211,6 +212,14 @@ PRODUCT_SCHEMA = pa.schema(
         pa.field("with_sweeteners", pa.int32(), nullable=True),
     ]
 )
+
+
+LANGUAGE_FIELDS = [
+    "ingredients_text",
+    "product_name",
+    "packaging_text",
+    "generic_name",
+]
 
 
 class ImageSize(BaseModel):
@@ -344,7 +353,7 @@ class Product(BaseModel):
     emb_codes: str | None = None
     entry_dates_tags: list[str] | None = None
     food_groups_tags: list[str] | None = None
-    generic_name: str | None = None
+    generic_name: list[LanguageField] | None = None
     images: list[Image] | None = None
     informers_tags: list[str] | None = None
     ingredients_analysis_tags: list[str] | None = None
@@ -390,6 +399,7 @@ class Product(BaseModel):
     obsolete: bool = False
     origins_tags: list[str] | None = None
     origins: str | None = None
+    owner: str | None = None
     packagings_complete: bool | None = None
     packaging_recycling_tags: list[str] | None = None
     packaging_shapes_tags: list[str] | None = None
@@ -484,7 +494,7 @@ class Product(BaseModel):
         The main language is stored with a `lang` value of "main", while other
         languages are stored with their language code (2-letter code).
         """
-        for field_name in ("ingredients_text", "product_name", "packaging_text"):
+        for field_name in LANGUAGE_FIELDS:
             main_language_value = data.pop(field_name, None)
             data[field_name] = []
 
