@@ -17,16 +17,19 @@ def export_job(flavor: Flavor) -> None:
         flavor=flavor, dataset_type=DatasetType.jsonl, download_newer=True
     )
 
-    if flavor is Flavor.off:
+    if flavor in (Flavor.off, Flavor.obf):
         export_parquet_job = high_queue.enqueue(
             export_parquet,
             dataset_path,
-            PARQUET_DATASET_PATH,
+            PARQUET_DATASET_PATH[flavor],
+            flavor,
             job_timeout="3h",
         )
-        high_queue.enqueue(
-            generate_push_mobile_app_dump,
-            PARQUET_DATASET_PATH,
-            depends_on=export_parquet_job,
-            job_timeout="3h",
-        )
+
+        if flavor is Flavor.off:
+            high_queue.enqueue(
+                generate_push_mobile_app_dump,
+                PARQUET_DATASET_PATH[flavor],
+                depends_on=export_parquet_job,
+                job_timeout="3h",
+            )
