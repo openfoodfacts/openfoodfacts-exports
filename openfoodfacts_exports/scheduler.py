@@ -3,11 +3,11 @@ from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.blocking import BlockingScheduler
-from openfoodfacts import Flavor
 from openfoodfacts.utils import get_logger
 from sentry_sdk import capture_exception
 
 from openfoodfacts_exports.tasks import export_job
+from openfoodfacts_exports.types import ExportFlavor
 from openfoodfacts_exports.utils import init_sentry
 from openfoodfacts_exports.workers.queues import high_queue
 
@@ -24,7 +24,13 @@ def exception_listener(event) -> None:
 def export_datasets() -> None:
     logger.info("Downloading dataset...")
 
-    for flavor in (Flavor.off, Flavor.obf, Flavor.opf, Flavor.opff):
+    for flavor in (
+        ExportFlavor.off,
+        ExportFlavor.obf,
+        ExportFlavor.opf,
+        ExportFlavor.opff,
+        ExportFlavor.op,
+    ):
         high_queue.enqueue(export_job, flavor, job_timeout="1h", result_ttl=0)
 
 

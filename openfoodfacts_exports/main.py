@@ -1,5 +1,6 @@
 import typer
-from openfoodfacts import Flavor
+
+from openfoodfacts_exports.types import ExportFlavor
 
 app = typer.Typer()
 
@@ -29,7 +30,7 @@ def run_worker(queues: list[str], burst: bool = False):
 
 
 @app.command()
-def launch_export(flavor: Flavor) -> None:
+def launch_export(flavor: ExportFlavor) -> None:
     """Launch an export job for a given flavor."""
     from openfoodfacts.utils import get_logger
 

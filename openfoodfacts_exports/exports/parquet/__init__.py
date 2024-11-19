@@ -6,7 +6,6 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 import tqdm
-from huggingface_hub import HfApi
 from more_itertools import chunked
 from openfoodfacts import Flavor
 from openfoodfacts.utils import jsonl_iter
@@ -14,7 +13,7 @@ from openfoodfacts.utils import jsonl_iter
 from openfoodfacts_exports import settings
 
 from .beauty import BEAUTY_DTYPE_MAP, BEAUTY_PRODUCT_SCHEMA, BeautyProduct
-from .common import Product
+from .common import Product, push_parquet_file_to_hf
 from .food import FOOD_DTYPE_MAP, FOOD_PRODUCT_SCHEMA, FoodProduct
 
 logger = logging.getLogger(__name__)
@@ -67,7 +66,9 @@ def export_parquet(
         shutil.move(tmp_converted_parquet_path, output_path)
 
     if settings.ENABLE_HF_PUSH:
-        push_parquet_file_to_hf(data_path=output_path)
+        push_parquet_file_to_hf(
+            data_path=output_path, repo_id="openfoodfacts/product-database"
+        )
     else:
         logger.info("Hugging Face push is disabled.")
     logger.info("JSONL to Parquet conversion and postprocessing completed.")
@@ -127,39 +128,3 @@ def convert_jsonl_to_parquet(
 
     if writer is not None:
         writer.close()
-
-
-def push_parquet_file_to_hf(
-    data_path: Path,
-    repo_id: str = "openfoodfacts/product-database",
-    revision: str = "main",
-    commit_message: str = "Database updated",
-) -> None:
-    """Push a Parquet file to Hugging Face Hub.
-
-    Args:
-        data_path (Path): The path to the Parquet file to push. The name of the
-            file will be used as the path in the repository.
-        repo_id (str, optional): The repository ID on Hugging Face Hub.
-            Defaults to "openfoodfacts/product-database".
-        revision (str, optional): The revision to push the data to. Defaults to
-            "main".
-        commit_message (str, optional): The commit message. Defaults to
-            "Database updated".
-    """
-    logger.info("Start pushing data to Hugging Face at %s", repo_id)
-    if not data_path.exists():
-        raise FileNotFoundError(f"Data is missing: {data_path}")
-    if data_path.suffix != ".parquet":
-        raise ValueError(f"A parquet file is expected. Got {data_path.suffix} instead.")
-    # We use the HF_Hub api since it gives us way more flexibility than
-    # push_to_hub()
-    HfApi().upload_file(
-        path_or_fileobj=data_path,
-        repo_id=repo_id,
-        revision=revision,
-        repo_type="dataset",
-        path_in_repo=data_path.name,
-        commit_message=commit_message,
-    )
-    logger.info("Data succesfully pushed to Hugging Face at %s", repo_id)
