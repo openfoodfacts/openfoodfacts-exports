@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.3.0...v0.4.0) (2024-11-20)
+
+
+### Features
+
+* add Open Prices export ([30c83a4](https://github.com/openfoodfacts/openfoodfacts-exports/commit/30c83a44b80b129d849da1231b90d5727587e720))
+* export Open Beauty Facts data as parquet file ([#15](https://github.com/openfoodfacts/openfoodfacts-exports/issues/15)) ([095e0b1](https://github.com/openfoodfacts/openfoodfacts-exports/commit/095e0b1586a3ca6521db933d226ac816de8ac4aa))
+
 ## [0.3.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.2.1...v0.3.0) (2024-11-18)
 
 
