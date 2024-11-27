@@ -67,6 +67,7 @@ class LocationModel(BaseModel):
 
 class PriceModel(BaseModel):
     id: int | None = None
+    type: str
     product_code: str | None = None
     product_name: str | None = None
     category_tag: str | None = None
@@ -98,6 +99,7 @@ class PriceModel(BaseModel):
 PRICE_PRODUCT_SCHEMA = pa.schema(
     [
         pa.field("id", pa.int64(), nullable=True),
+        pa.field("type", pa.string(), nullable=True),
         pa.field("product_code", pa.string(), nullable=True),
         pa.field("product_name", pa.string(), nullable=True),
         pa.field("category_tag", pa.string(), nullable=True),
