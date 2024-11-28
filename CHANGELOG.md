@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.0...v0.4.1) (2024-11-28)
+
+
+### Bug Fixes
+
+* add new Price.type field ([#17](https://github.com/openfoodfacts/openfoodfacts-exports/issues/17)) ([98ba8e1](https://github.com/openfoodfacts/openfoodfacts-exports/commit/98ba8e1cb1e27057d96b8bca73511cf0a8d9ad2f))
+
 ## [0.4.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.3.0...v0.4.0) (2024-11-20)
 
 
