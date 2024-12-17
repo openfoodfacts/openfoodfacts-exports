@@ -10,7 +10,7 @@ from .processes import (
     process_text,
 )
 
-LANG = ["en", "fr"]
+LANG = "en"
 BATCH_SIZE = 10000
 PARQUET_PATH = "/home/jeremy/projects/openfoodfacts/data/food.parquet"
 
@@ -19,7 +19,7 @@ LANG_FIELDS = [
     "categories",
     "origins",
     "labels",
-    "countries",
+    "countries", # Not clear what is this exactly. Duplicate with tags (Remove?)
     "allergens",
     "traces",
     "additives",
@@ -41,7 +41,7 @@ FIELDS = [
     "last_updated_t",
     # "last_updated_datetime", # same
     "product_name",
-    "abbreviated_product_name",  # Haven't figured out the process. Just take the product_name, which is a struct with main and lang
+    "abbreviated_product_name",  # Haven't figured out the process. Just take the product_name, which is a struct with main and lang (Removed for now)
     "generic_name",
     "quantity",
     "packaging",
@@ -211,12 +211,6 @@ FIELDS = [
     "nitrate_100g",
 ]
 
-
-# table = pq.read_table(
-#     PARQUET_PATH,
-#     columns=["code"],
-# )
-
 df = (
     pl.scan_parquet(PARQUET_PATH, n_rows=BATCH_SIZE)
     .select(
@@ -224,116 +218,194 @@ df = (
             pl.col("code"),
             pl.col("code")
             .alias("url")
-            .map_elements(lambda x: process_url(code=x, lang=LANG)),
+            .map_elements(
+                lambda x: process_url(code=x, lang=LANG), return_dtype=pl.String
+            ),
             pl.col("creator"),
             pl.col("created_t"),
             pl.col("created_t")
             .alias("created_datetime")
-            .map_elements(datetime.fromtimestamp),
+            .map_elements(datetime.fromtimestamp, return_dtype=pl.Datetime),
             pl.col("last_modified_t"),
             pl.col("last_modified_t")
             .alias("last_modified_datetime")
-            .map_elements(datetime.fromtimestamp),
+            .map_elements(datetime.fromtimestamp, return_dtype=pl.Datetime),
             pl.col("last_modified_by"),
             pl.col("last_updated_t"),
             pl.col("last_updated_t")
             .alias("last_updated_datetime")
-            .map_elements(datetime.fromtimestamp),
-            pl.col("product_name"), ##### HERRE!!!
-            pl.col("product_name").alias("abbreviated_product_name"),  # NOTE: Same
-            pl.col("generic_name"),
+            .map_elements(datetime.fromtimestamp, return_dtype=pl.Datetime),
+            pl.col("product_name").map_elements(
+                lambda x: process_text(texts=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("generic_name").map_elements(
+                lambda x: process_text(texts=x, lang=LANG), return_dtype=pl.String
+            ),
             pl.col("quantity"),
             pl.col("packaging"),
-            pl.col("packaging_tags").map_elements(process_tags),
-            # pl.col("packaging_tags")
-            # .alias(f"packaging_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("packaging_text").map_elements(
-            #     lambda x: process_text(texts=x, lang=LANG)
-            # ),
-            # pl.col("brands"),
-            # pl.col("brands_tags").map_elements(process_tags),
-            # pl.col("categories"),
-            # pl.col("categories_tags").map_elements(process_tags),
-            # pl.col("categories_tags")
-            # .alias(f"categories_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("origins"),
-            # pl.col("origins_tags").map_elements(process_tags),
-            # pl.col("origins_tags")
-            # .alias("origins_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("manufacturing_places"),
-            # pl.col("manufacturing_places_tags").map_elements(process_tags),
-            # pl.col("labels"),
-            # pl.col("labels_tags").map_elements(process_tags),
-            # pl.col("labels_tags")
-            # .alias(f"labels_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("emb_codes"),
-            # pl.col("emb_codes_tags").map_elements(process_tags),
-            # pl.col("cities_tags").map_elements(process_tags),
-            # pl.col("purchase_places_tags")
-            # .alias("purchase_places")
-            # .map_elements(process_tags),
-            # pl.col("stores"),
-            # pl.col("countries_tags").alias("countries").map_elements(process_tags),
-            # pl.col("countries_tags"),
+            pl.col("packaging_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("packaging_tags")
+            .alias(f"packaging_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("packaging_text").map_elements(
+                lambda x: process_text(texts=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("brands"),
+            pl.col("brands_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("categories"),
+            pl.col("categories_tags").map_elements(
+                process_tags, return_dtype=pl.String
+            ),
+            pl.col("categories_tags")
+            .alias(f"categories_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("origins"),
+            pl.col("origins_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("origins_tags")
+            .alias("origins_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("manufacturing_places"),
+            pl.col("manufacturing_places_tags").map_elements(
+                process_tags, return_dtype=pl.String
+            ),
+            pl.col("labels"),
+            pl.col("labels_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("labels_tags")
+            .alias(f"labels_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("emb_codes"),
+            pl.col("emb_codes_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("cities_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("purchase_places_tags")
+            .alias("purchase_places")
+            .map_elements(process_tags, return_dtype=pl.String),
+            pl.col("stores"),
+            #NOTE: to add or not?
             # pl.col("countries_tags")
-            # .alias(f"countries_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("ingredients_text"),
-            # pl.col("ingredients_tags").map_elements(process_tags),
-            # pl.col("ingredients_analysis_tags").map_elements(process_tags),
-            # pl.col("allergens_tags").alias("allergens").map_elements(process_tags),
-            # pl.col("allergens_tags")
-            # .alias(f"allergens_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("traces_tags").alias("traces").map_elements(process_tags),
-            # pl.col("traces_tags").map_elements(process_tags),
-            # pl.col("traces_tags")
-            # .alias(f"traces_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("serving_size"),
-            # pl.col("serving_quantity"),
-            # pl.col("no_nutrition_data"),
-            # pl.col("additives_n"),
-            # pl.col("additives_tags").alias("additives_tags").map_elements(process_tags),
-            # pl.col("additives_tags").map_elements(process_tags),
-            # pl.col("additives_tags")
-            # .alias(f"additives_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("nutriscore_score"),
-            # pl.col("nutriscore_grade"),
-            # pl.col("nova_group"),
-            # pl.col("food_groups_tags").alias("food_groups").map_elements(process_tags),
-            # pl.col("food_groups_tags").map_elements(process_tags),
-            # pl.col("food_groups_tags")
-            # .alias(f"food_groups_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("states_tags").alias("states").map_elements(process_tags),
-            # pl.col("states_tags").map_elements(process_tags),
-            # pl.col("states_tags")
-            # .alias(f"states_{LANG}")
-            # .map_elements(lambda x: process_lang(tags=x, lang=LANG)),
-            # pl.col("ecoscore_score"),
-            # pl.col("ecoscore_grade"),
-            # pl.col("nutrient_levels_tags").map_elements(process_tags),
-            # pl.col("product_quantity"),
-            # pl.col("owner"),
-            # pl.col("data_quality_errors_tags").map_elements(process_tags),
-            # pl.col("unique_scans_n"),
-            # pl.col("popularity_tags").map_elements(process_tags),
-            # pl.col("completeness"),
-            # pl.col("last_image_t"),
-            # pl.col("last_image_t")
-            # .alias("last_image_datetime")
-            # .map_elements(datetime.fromtimestamp),
-            # pl.col("categories_tags")
-            # .alias("main_category")
-            # .map_elements(lambda arr: arr[-1]),
-
-
+            # .alias("countries")
+            # .map_elements(lambda x: process_lang(x, lang=LANG), return_dtype=pl.String),
+            pl.col("countries_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("countries_tags")
+            .alias(f"countries_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("ingredients_text").map_elements(
+                lambda x: process_text(texts=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("ingredients_tags").map_elements(
+                process_tags, return_dtype=pl.String
+            ),
+            pl.col("ingredients_analysis_tags").map_elements(
+                process_tags, return_dtype=pl.String
+            ),
+            pl.col("allergens_tags")
+            .alias("allergens")
+            .map_elements(process_tags, return_dtype=pl.String),
+            pl.col("allergens_tags")
+            .alias(f"allergens_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG), return_dtype=pl.String
+            ),
+            pl.col("traces_tags")
+            .alias("traces")
+            .map_elements(process_tags, return_dtype=pl.String),
+            pl.col("traces_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("traces_tags")
+            .alias(f"traces_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG),
+                return_dtype=pl.String
+            ),
+            pl.col("serving_size"),
+            pl.col("serving_quantity"),
+            pl.col("no_nutrition_data"),
+            pl.col("additives_n"),
+            pl.col("additives_tags").alias("additives_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("additives_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("additives_tags")
+            .alias(f"additives_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG),
+                return_dtype=pl.String
+            ),
+            pl.col("nutriscore_score"),
+            pl.col("nutriscore_grade"),
+            pl.col("nova_group"),
+            pl.col("food_groups_tags").alias("food_groups").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("food_groups_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("food_groups_tags")
+            .alias(f"food_groups_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG),
+                return_dtype=pl.String
+            ),
+            pl.col("states_tags").alias("states").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("states_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("states_tags")
+            .alias(f"states_{LANG}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=LANG),
+                return_dtype=pl.String
+            ),
+            pl.col("ecoscore_score"),
+            pl.col("ecoscore_grade"),
+            pl.col("nutrient_levels_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("product_quantity"),
+            pl.col("owner"),
+            pl.col("data_quality_errors_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("unique_scans_n"),
+            pl.col("popularity_tags").map_elements(
+                process_tags,
+                return_dtype=pl.String
+            ),
+            pl.col("completeness"),
+            pl.col("last_image_t"),
+            pl.col("last_image_t")
+            .alias("last_image_datetime")
+            .map_elements(datetime.fromtimestamp, return_dtype=pl.Datetime),
+            pl.col("categories_tags")
+            .alias("main_category")
+            .map_elements(
+                lambda arr: arr[-1],
+                return_dtype=pl.String
+            ),
+            
             # pl.col("image_url"),
             # pl.col("image_small_url"),
             # pl.col("image_ingredients_url"),
