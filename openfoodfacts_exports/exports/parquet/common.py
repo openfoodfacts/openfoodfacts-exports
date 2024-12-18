@@ -23,6 +23,7 @@ class Image(BaseModel):
     sizes: dict[str, ImageSize] | None = None
     uploaded_t: int | None = None
     imgid: int | None = None
+    rev: int | None = None
     uploader: str | None = None
 
     @model_validator(mode="after")
@@ -242,13 +243,13 @@ class Product(BaseModel):
     @classmethod
     def parse_images(cls, data: dict) -> dict:
         """Parse images field into a list of dictionaries with `key`, `imgid`,
-        `sizes`, `uploaded_t`, and `uploader` keys.
+        `rev`, `sizes`, `uploaded_t`, and `uploader` keys.
 
         In Open Food Facts, images are stored as a dictionary with the image
         key as the key and the image data as the value.
 
         To make the schema compatible with Parquet, we convert these fields
-        into a list of dictionaries with `key`, `imgid`, `sizes`, `uploaded_t`,
+        into a list of dictionaries with `key`, `imgid`, `rev`, `sizes`, `uploaded_t`,
         and `uploader` keys. We copy the image key (ex: `3`, `nutrition_fr`,...)
         from the original dictionary and add it as a field under the `key` key.
         """
@@ -283,6 +284,7 @@ PA_IMAGES_DATATYPE = pa.list_(
         [
             pa.field("key", pa.string(), nullable=True),
             pa.field("imgid", pa.int32(), nullable=True),
+            pa.field("rev", pa.int32(), nullable=True),
             pa.field(
                 "sizes",
                 pa.struct(
