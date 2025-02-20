@@ -76,6 +76,7 @@ class PriceModel(BaseModel):
     price: Decimal | None = None
     price_is_discounted: bool | None = None
     price_without_discount: Decimal | None = None
+    discount_type: str | None = None
     price_per: str | None = None
     currency: str | None = None
     location_osm_id: int | None = None
@@ -108,6 +109,7 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
         pa.field("price", pa.decimal128(10, 2), nullable=True),
         pa.field("price_is_discounted", pa.bool_(), nullable=True),
         pa.field("price_without_discount", pa.decimal128(10, 2), nullable=True),
+        pa.field("discount_type", pa.string(), nullable=True),
         pa.field("price_per", pa.string(), nullable=True),
         pa.field("currency", pa.string(), nullable=True),
         pa.field("location_osm_id", pa.int64(), nullable=True),
