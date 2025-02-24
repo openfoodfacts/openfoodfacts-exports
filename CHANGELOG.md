@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.1...v0.4.2) (2025-02-24)
+
+
+### Bug Fixes
+
+* :sparkles: Add rev key to Images in Parquet ([#22](https://github.com/openfoodfacts/openfoodfacts-exports/issues/22)) ([061566c](https://github.com/openfoodfacts/openfoodfacts-exports/commit/061566c4513bb9855f95f83968a69a8c356a7b36))
+* add new Price.discount_type field ([#25](https://github.com/openfoodfacts/openfoodfacts-exports/issues/25)) ([e4c7dc7](https://github.com/openfoodfacts/openfoodfacts-exports/commit/e4c7dc71dd562fc18a600f2fde124461b22e36c9))
+
 ## [0.4.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.0...v0.4.1) (2024-11-28)
 
 
