@@ -113,6 +113,15 @@ class FoodProduct(Product):
 
         return data
 
+    @model_validator(mode="before")
+    @classmethod
+    def parse_nova_groups(cls, data: dict):
+        """It seems some nova_groups can be int, but str expected."""
+        nova_groups = data.get("nova_groups")
+        if nova_groups and isinstance(nova_groups, int):
+            data["nova_groups"] = str(nova_groups)
+        return data
+
     @field_serializer("ingredients")
     def serialize_ingredients(
         self, ingredients: list[Ingredient] | None, _info
