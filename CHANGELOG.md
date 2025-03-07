@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.1...v0.4.2) (2025-03-07)
+
+
+### Bug Fixes
+
+* :bug: Nova_groups pydantic error fixed ([#30](https://github.com/openfoodfacts/openfoodfacts-exports/issues/30)) ([3531fc3](https://github.com/openfoodfacts/openfoodfacts-exports/commit/3531fc310be4ab8b391810d12909a044906b3729))
+* :sparkles: Add rev key to Images in Parquet ([#22](https://github.com/openfoodfacts/openfoodfacts-exports/issues/22)) ([061566c](https://github.com/openfoodfacts/openfoodfacts-exports/commit/061566c4513bb9855f95f83968a69a8c356a7b36))
+* add new Price.discount_type field ([#25](https://github.com/openfoodfacts/openfoodfacts-exports/issues/25)) ([e4c7dc7](https://github.com/openfoodfacts/openfoodfacts-exports/commit/e4c7dc71dd562fc18a600f2fde124461b22e36c9))
+
 ## [0.4.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.0...v0.4.1) (2024-11-28)
 
 
