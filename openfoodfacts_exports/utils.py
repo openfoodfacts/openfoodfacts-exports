@@ -45,9 +45,10 @@ def get_minio_client() -> Minio:
 
 def timer(func):
     def wrapper(*args, **kwargs):
-        timestamp= time.time()
+        timestamp = time.time()
         output = func(*args, **kwargs)
         latency = time.time() - timestamp
         logger.info(f"Latency of {func.__name__}: {latency:.2f} seconds")
         return output
+
     return wrapper

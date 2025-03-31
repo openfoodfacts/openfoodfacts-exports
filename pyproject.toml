@@ -12,6 +12,7 @@ dependencies = [
     "more-itertools>=10.5.0",
     "openfoodfacts>=2.2.0",
     "orjson>=3.10.11",
+    "polars==1.26",
     "pyarrow>=18.0.0",
     "pytz>=2024.2",
     "requests>=2.32.3",
@@ -27,7 +28,7 @@ dependencies = [
 select = ["E", "F"]
 
 
-[tool.ruff.pycodestyle]
+[tool.ruff.lint.pycodestyle]
 max-doc-length = 88
 
 [dependency-groups]
