@@ -14,7 +14,7 @@ nutrient_names = Literal[
     "energy-kcal_100g"
     "energy_100g"
     "energy-from-fat_100g"
-    "fat_100g" 
+    "fat_100g"
     "saturated-fat_100g"
     "butyric-acid_100g"
     "caproic-acid_100g"
@@ -148,19 +148,28 @@ def process_lang(tags: list[str], lang: str) -> str:
     - [en:plastic, en:tray, fr:barquette-en-plastique, fr:film-en-plastique]
     - [en:glass, en:bottle]
 
-    -Output: glass if lang="en"
+    Output:
+    - "barquette-en-plastique" if lang="fr
+    - "glass" if lang="en"
     """
     return ",".join([tag.split(":")[-1] for tag in tags if tag.startswith(f"{lang}:")])
 
 
-def process_text(texts: list[dict], lang: str) -> str:
+def process_text(elts: list[dict], lang: str) -> str | None:
     """In the Parquet, texts are grouped by lang as a dict as such:
     {
         "lang": "main", "text": <text>,
         "lang": "pl", "text": <text>
     }"""
-    for elt in texts:
-        return elt["text"] if elt["lang"] == lang else elt.get("main", "")
+    if len(elts) == 0:
+        return None
+    for elt in elts:
+        if elt["lang"] == lang:
+            return elt["text"]
+    # In the case the lang wasn't found, take "main"
+    for elt in elts:
+        if elt["lang"] == "main":
+            return elt["text"]
 
 
 def process_image_url(
@@ -201,7 +210,7 @@ def process_image_url(
                 f"{splitted_code}/"
                 f"{image_model.key}."
                 f"{image_model.rev}."
-                f"{image_model.sizes.get(size)}"
+                f"{size}"
                 f".jpg"
             )
             return image_url
