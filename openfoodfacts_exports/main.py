@@ -1,6 +1,6 @@
 import typer
 
-from openfoodfacts_exports.types import ExportFlavor
+from openfoodfacts_exports.schemas import ExportFlavor
 
 app = typer.Typer()
 

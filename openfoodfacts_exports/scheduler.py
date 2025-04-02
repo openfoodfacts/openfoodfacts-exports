@@ -7,7 +7,7 @@ from openfoodfacts.utils import get_logger
 from sentry_sdk import capture_exception
 
 from openfoodfacts_exports.tasks import export_job
-from openfoodfacts_exports.types import ExportFlavor
+from openfoodfacts_exports.schemas import ExportFlavor
 from openfoodfacts_exports.utils import init_sentry
 from openfoodfacts_exports.workers.queues import high_queue
 

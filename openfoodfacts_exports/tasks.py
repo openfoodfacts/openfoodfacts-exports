@@ -12,7 +12,7 @@ from openfoodfacts_exports.exports.parquet.price import PRICE_DATASET_PATH
 from openfoodfacts_exports.exports.parquet.price import (
     export_parquet as export_price_parquet,
 )
-from openfoodfacts_exports.types import ExportFlavor
+from openfoodfacts_exports.schemas import ExportFlavor
 from openfoodfacts_exports.workers.queues import high_queue
 
 logger = logging.getLogger(__name__)
