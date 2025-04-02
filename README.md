@@ -15,7 +15,6 @@ Two services are currently running:
 
 The following exports are yet to migrate:
 
-- CSV (en, fr)
 - RDF (en, fr)
 - daily diffs
 
