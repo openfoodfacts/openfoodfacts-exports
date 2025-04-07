@@ -3,6 +3,8 @@ from typing import Literal
 from openfoodfacts_exports.exports.parquet.common import Image
 from openfoodfacts_exports.exports.parquet.food import NutrimentField
 
+from .utils import ENGLISH_FRENCH_COUNTRY_MAPPER
+
 IMAGE_MAP = {
     "front": "front_",
     "ingredients": "ingredients_",
@@ -27,13 +29,69 @@ def process_lang(tags: list[str], lang: str) -> str:
     - [en:glass, en:bottle]
 
     Output:
-    - "barquette-en-plastique" if lang="fr
+    - "barquette-en-plastique,film-en-plastique" if lang="fr
     - "glass" if lang="en"
+
+    There's also a specific case when the only available tag is xx.
+    In this condition, we use xx: tag.
+
+    Original CSV
+    ┌──────────────┬──────────────┬──────────────┐
+    │    brands    │ brands_tags  │  brands_fr   │
+    │   varchar    │   varchar    │   varchar    │
+    ├──────────────┼──────────────┼──────────────┤
+    │ vidifood     │ xx:vidifood  │ vidifood     │
+    │ Knorr        │ xx:knorr     │ knorr        │
+    └────────────────────────────────────────────┘
+
     """
-    return ",".join([tag.split(":")[-1] for tag in tags if tag.startswith(f"{lang}:")])
+    output = ",".join(
+        [tag.split(":")[-1].strip() for tag in tags if tag.startswith(f"{lang}:")]
+    )
+    if output == "":
+        output = ",".join(
+            [tag.split(":")[-1].strip() for tag in tags if tag.startswith("xx:")]
+        )
+    return output
 
 
-def process_text(elts: list[dict], lang: str) -> str | None:
+def process_lang_countries(tags: list[str], lang: str) -> str:
+    """For these tags, we translate the countries to its language.
+    CSV:
+        ┌──────────────────┬──────────────────┬──────────────┐
+        │    countries     │  countries_tags  │ countries_fr │
+        │     varchar      │     varchar      │   varchar    │
+        ├──────────────────┼──────────────────┼──────────────┤
+        │ en:fr            │ en:france        │ France       │
+        │ en:France        │ en:france        │ France       │
+        │ en:france        │ en:france        │ France       │
+        │ en:Ireland       │ en:ireland       │ Irlande      │
+        │ United States    │ en:united-states │ États-Unis   │
+        │ en:Ireland       │ en:ireland       │ Irlande      │
+        │ United States    │ en:united-states │ États-Unis   │
+        │ en:france        │ en:france        │ France       │
+        │ en:fr            │ en:france        │ France       │
+        │ en:United States │ en:united-states │ États-Unis   │
+        ├──────────────────┴──────────────────┴──────────────┤
+        │ 10 rows                                  3 columns │
+        └────────────────────────────────────────────────────┘
+    """
+    output = ",".join(
+        [
+            tag.split(":")[-1].strip().lower()
+            for tag in tags
+            if tag.startswith(f"{lang}:")
+        ]
+    )
+    # If no corresponding lang, we take the first English tag we translate in French
+    if output == "":
+        output = [
+            tag.split(":")[-1].strip().lower() for tag in tags if tag.startswith("en:")
+        ][0]
+    return ENGLISH_FRENCH_COUNTRY_MAPPER.get(output, "") if lang == "fr" else output
+
+
+def process_text(elts: list[dict[str, str]], lang: str) -> str | None:
     """In the Parquet, texts are grouped by lang as a dict as such:
     {
         "lang": "main", "text": <text>,
@@ -51,7 +109,7 @@ def process_text(elts: list[dict], lang: str) -> str | None:
 
 
 def process_image_url(
-    images: list[dict],
+    images: list[dict[str, str | int]],
     lang: str,
     code: str,
     image_key: Literal["front", "ingredients", "nutrition"],
@@ -95,7 +153,7 @@ def process_image_url(
 
 
 def process_nutrients(
-    nutrients: list[dict],
+    nutrients: list[dict[str, float]],
     nutrient_name: str,
 ) -> float | None:
     for nutrient in nutrients:

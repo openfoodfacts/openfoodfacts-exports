@@ -7,6 +7,7 @@ from .processes import (
     process_url,
     process_tags,
     process_lang,
+    process_lang_countries,
     process_text,
     process_image_url,
     process_nutrients,
@@ -41,6 +42,7 @@ def export_parquet_to_csv(parquet_path: Path, csv_path: Path, lang: str) -> None
                 lambda x: process_text(elts=x, lang=lang),
                 return_dtype=pl.String,
             ),
+            # NOTE: abbreviated_product_name --> didn't understand how it is generated
             pl.col("generic_name").map_elements(
                 lambda x: process_text(elts=x, lang=lang),
                 return_dtype=pl.String,
@@ -60,6 +62,12 @@ def export_parquet_to_csv(parquet_path: Path, csv_path: Path, lang: str) -> None
             ),
             pl.col("brands"),
             pl.col("brands_tags").map_elements(process_tags, return_dtype=pl.String),
+            pl.col("brands_tags")
+            .alias(f"brands_{lang}")
+            .map_elements(
+                lambda x: process_lang(tags=x, lang=lang),
+                return_dtype=pl.String,
+            ),
             pl.col("categories"),
             pl.col("categories_tags").map_elements(
                 process_tags, return_dtype=pl.String
@@ -92,20 +100,26 @@ def export_parquet_to_csv(parquet_path: Path, csv_path: Path, lang: str) -> None
             ),
             pl.col("emb_codes"),
             pl.col("emb_codes_tags").map_elements(process_tags, return_dtype=pl.String),
+            # No clear indication of which city to take. So we take the first.
+            pl.col("cities_tags")
+            .alias("cities")
+            .map_elements(lambda x: x[0] if x else None, return_dtype=pl.String),
             pl.col("cities_tags").map_elements(process_tags, return_dtype=pl.String),
             pl.col("purchase_places_tags")
             .alias("purchase_places")
             .map_elements(process_tags, return_dtype=pl.String),
             pl.col("stores"),
-            # NOTE: Decided to not add it, the field doesn't have a clear structure in the CSV
-            # pl.col("countries_tags")
-            # .alias("countries")
-            # .map_elements(lambda x: process_lang(x, lang=lang), return_dtype=pl.String),
+            # NOTE: Entered by the users. Not consistent. KEpt for backward compatibility
+            pl.col("countries_tags")
+            .alias("countries")
+            .map_elements(
+                lambda x: process_lang_countries(x, lang=lang), return_dtype=pl.String
+            ),
             pl.col("countries_tags").map_elements(process_tags, return_dtype=pl.String),
             pl.col("countries_tags")
             .alias(f"countries_{lang}")
             .map_elements(
-                lambda x: process_lang(tags=x, lang=lang),
+                lambda x: process_lang_countries(tags=x, lang=lang),
                 return_dtype=pl.String,
             ),
             pl.col("ingredients_text").map_elements(
@@ -151,6 +165,7 @@ def export_parquet_to_csv(parquet_path: Path, csv_path: Path, lang: str) -> None
             pl.col("nutriscore_score"),
             pl.col("nutriscore_grade"),
             pl.col("nova_group"),
+            #TODO: pnns_group_1 & pnns_group_2 --> need to update Parquet from JSONL
             pl.col("food_groups_tags")
             .alias("food_groups")
             .map_elements(process_tags, return_dtype=pl.String),
@@ -173,6 +188,7 @@ def export_parquet_to_csv(parquet_path: Path, csv_path: Path, lang: str) -> None
                 lambda x: process_lang(tags=x, lang=lang),
                 return_dtype=pl.String,
             ),
+            # pl.col("brand_owner"), #TODO: need to update Parquet from JSONL
             pl.col("ecoscore_score"),
             pl.col("ecoscore_grade"),
             pl.col("nutrient_levels_tags").map_elements(
