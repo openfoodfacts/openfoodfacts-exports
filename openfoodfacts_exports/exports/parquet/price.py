@@ -14,7 +14,7 @@ from openfoodfacts.utils import jsonl_iter
 from pydantic import BaseModel, field_serializer
 
 from openfoodfacts_exports import settings
-from openfoodfacts_exports.exports.parquet.common import push_parquet_file_to_hf
+from openfoodfacts_exports.exports import push_dataset_file_to_hf
 
 logger = logging.getLogger(__name__)
 
@@ -298,7 +298,7 @@ def export_parquet(
         shutil.move(tmp_converted_parquet_path, output_path)
 
     if settings.ENABLE_HF_PUSH:
-        push_parquet_file_to_hf(
+        push_dataset_file_to_hf(
             data_path=output_path, repo_id="openfoodfacts/open-prices"
         )
     else:

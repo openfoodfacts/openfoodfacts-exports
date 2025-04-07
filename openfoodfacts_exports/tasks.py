@@ -6,13 +6,16 @@ from openfoodfacts.dataset import DEFAULT_CACHE_DIR
 from openfoodfacts.types import DatasetType
 from openfoodfacts.utils import download_file, should_download_file
 
-from openfoodfacts_exports.exports.csv import generate_push_mobile_app_dump
+from openfoodfacts_exports.exports.csv_export.mobile_csv import (
+    generate_push_mobile_app_dump,
+)
+from openfoodfacts_exports.exports.csv_export import export_csv, CSV_DATASET_PATH
 from openfoodfacts_exports.exports.parquet import PARQUET_DATASET_PATH, export_parquet
 from openfoodfacts_exports.exports.parquet.price import PRICE_DATASET_PATH
 from openfoodfacts_exports.exports.parquet.price import (
     export_parquet as export_price_parquet,
 )
-from openfoodfacts_exports.types import ExportFlavor
+from openfoodfacts_exports.schemas import ExportFlavor
 from openfoodfacts_exports.workers.queues import high_queue
 
 logger = logging.getLogger(__name__)
@@ -44,6 +47,14 @@ def export_job(flavor: ExportFlavor) -> None:
             high_queue.enqueue(
                 generate_push_mobile_app_dump,
                 PARQUET_DATASET_PATH[flavor],
+                depends_on=export_parquet_job,
+                job_timeout="3h",
+            )
+
+            high_queue.enqueue(
+                export_csv,
+                PARQUET_DATASET_PATH[flavor],
+                CSV_DATASET_PATH[flavor],
                 depends_on=export_parquet_job,
                 job_timeout="3h",
             )
