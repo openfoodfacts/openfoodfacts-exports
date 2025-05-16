@@ -84,7 +84,7 @@ class PriceModel(BaseModel):
     location_id: int | None = None
     date: datetime.date | None = None
     proof_id: int | None = None
-    receipt_quantity: int | None = None
+    receipt_quantity: float | None = None
     owner: str | None = None
     source: str | None = None
     created: datetime.datetime | None = None
@@ -117,7 +117,7 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
         pa.field("location_id", pa.int32(), nullable=True),
         pa.field("date", pa.date32(), nullable=True),
         pa.field("proof_id", pa.int32(), nullable=True),
-        pa.field("receipt_quantity", pa.int32(), nullable=True),
+        pa.field("receipt_quantity", pa.float32(), nullable=True),
         pa.field("owner", pa.string(), nullable=True),
         pa.field("source", pa.string(), nullable=True),
         pa.field("created", pa.timestamp("us", tz="UTC"), nullable=True),
