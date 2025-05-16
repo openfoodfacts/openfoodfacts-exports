@@ -272,6 +272,28 @@ class Product(BaseModel):
         return data
 
 
+class CategoriesProperties(BaseModel, extra="forbid"):
+    """`CategoriesProperties` schema."""
+
+    ciqual_food_code: int | None = None
+    agribalyse_food_code: int | None = None
+    agribalyse_proxy_food_code: int | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_fields(cls, data: dict) -> dict:
+        """Strips the `:en` suffix and fixes the `_cod` bug in the field names.
+        `ciqual_food_code:en` becomes `ciqual_food_code`."""
+        return {fix_food_code_key(k): v for k, v in data.items()}
+
+
+def fix_food_code_key(key: str) -> str:
+    key = key.strip(":en")  # Assumes the suffix is always ":en"
+    # NOTE: Sometimes the field is _cod and not _code, probably a bug.
+    key = key.replace("_cod", "_code") if key.endswith("_cod") else key
+    return key
+
+
 PA_IMAGE_SIZE_DATATYPE = pa.struct(
     [
         pa.field("h", pa.int32(), nullable=True),
@@ -360,6 +382,15 @@ PA_OWNER_FIELD_DATATYPE = pa.list_(
             pa.field("timestamp", pa.int64()),
         ]
     )
+)
+
+
+PA_CATEGORIES_PROPERTIES_DATATYPE = pa.struct(
+    [
+        pa.field("agribalyse_food_code", pa.int32(), nullable=True),
+        pa.field("agribalyse_proxy_food_code", pa.int32(), nullable=True),
+        pa.field("ciqual_food_code", pa.int32(), nullable=True),
+    ]
 )
 
 
