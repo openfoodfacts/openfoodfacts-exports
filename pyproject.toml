@@ -32,10 +32,7 @@ include = ["openfoodfacts_exports"]
 
 [tool.ruff.lint]
 select = ["E", "F"]
-
-
-[tool.ruff.pycodestyle]
-max-doc-length = 88
+pycodestyle.max-doc-length = 88
 
 [dependency-groups]
 dev = [
