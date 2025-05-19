@@ -493,8 +493,8 @@ wheels = [
 
 [[package]]
 name = "openfoodfacts-exports"
-version = "0.2.1"
-source = { virtual = "." }
+version = "0.4.2"
+source = { editable = "." }
 dependencies = [
     { name = "apscheduler" },
     { name = "duckdb" },
