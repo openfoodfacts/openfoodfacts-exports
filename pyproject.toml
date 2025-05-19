@@ -22,13 +22,17 @@ dependencies = [
     "typer>=0.12.5",
 ]
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["openfoodfacts_exports"]
 
 [tool.ruff.lint]
 select = ["E", "F"]
-
-
-[tool.ruff.pycodestyle]
-max-doc-length = 88
+pycodestyle.max-doc-length = 88
 
 [dependency-groups]
 dev = [
