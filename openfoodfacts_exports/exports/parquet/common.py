@@ -387,9 +387,9 @@ PA_OWNER_FIELD_DATATYPE = pa.list_(
 
 PA_CATEGORIES_PROPERTIES_DATATYPE = pa.struct(
     [
+        pa.field("ciqual_food_code", pa.int32(), nullable=True),
         pa.field("agribalyse_food_code", pa.int32(), nullable=True),
         pa.field("agribalyse_proxy_food_code", pa.int32(), nullable=True),
-        pa.field("ciqual_food_code", pa.int32(), nullable=True),
     ]
 )
 
