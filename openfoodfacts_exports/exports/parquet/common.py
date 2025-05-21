@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pyarrow as pa
 from huggingface_hub import HfApi
+from openfoodfacts.images import convert_to_legacy_schema
 from pydantic import BaseModel, Field, model_validator
 
 logger = logging.getLogger(__name__)
@@ -249,13 +250,15 @@ class Product(BaseModel):
         key as the key and the image data as the value.
 
         To make the schema compatible with Parquet, we convert these fields
-        into a list of dictionaries with `key`, `imgid`, `rev`, `sizes`, `uploaded_t`,
-        and `uploader` keys. We copy the image key (ex: `3`, `nutrition_fr`,...)
-        from the original dictionary and add it as a field under the `key` key.
+        into a list of dictionaries with `key`, `imgid`, `rev`, `sizes`,
+        `uploaded_t`, and `uploader` keys. We copy the image key (ex: `3`,
+        `nutrition_fr`,...) from the original dictionary and add it as a field
+        under the `key` key.
         """
         images = data.pop("images", None)
         data["images"] = []
         if images:
+            images = convert_to_legacy_schema(images)
             for key, value in images.items():
                 data["images"].append({"key": key, **value})
         return data
