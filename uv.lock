@@ -479,16 +479,16 @@ wheels = [
 
 [[package]]
 name = "openfoodfacts"
-version = "2.2.0"
+version = "2.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "requests" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/76/8c/376fc0ae1ee2abd2f7b4726474fe58b9725f0e368cfd390aa312738be6c1/openfoodfacts-2.2.0.tar.gz", hash = "sha256:e79ec1292238078de5e4857a19a7ccc66ca99b766311a9d7e60e9bf5315ac762", size = 45720 }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/d5/6a72d665a3519bacf8ab907dc1ba8351f42e0ec9af80546e183fcc871cc9/openfoodfacts-2.5.2.tar.gz", hash = "sha256:372967e4e965ce9c504a6430fb59b1801950c2157e507b96f7e1c8938789c680", size = 53141 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/88/ff3197960a9f587e29578ea62697edae4a499e950c8641b20944f2ca1099/openfoodfacts-2.2.0-py3-none-any.whl", hash = "sha256:172c953fd5727ffbe23bd2839afebc15cc346c3e186976e98b3d37026a90ba5b", size = 48291 },
+    { url = "https://files.pythonhosted.org/packages/b3/46/991e9706052774c55fd4c0e54f4f737108eef5e0d0f02de1506064e25c1d/openfoodfacts-2.5.2-py3-none-any.whl", hash = "sha256:6081f541d137a60d73c514d8ca19455fd0e4eb9b249a9f5f1c84686d22cca97c", size = 57715 },
 ]
 
 [[package]]
@@ -531,7 +531,7 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.26.2" },
     { name = "minio", specifier = ">=7.2.10" },
     { name = "more-itertools", specifier = ">=10.5.0" },
-    { name = "openfoodfacts", specifier = ">=2.2.0" },
+    { name = "openfoodfacts", specifier = "==2.5.2" },
     { name = "orjson", specifier = ">=3.10.11" },
     { name = "pyarrow", specifier = ">=18.0.0" },
     { name = "pytz", specifier = ">=2024.2" },
