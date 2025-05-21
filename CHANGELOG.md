@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.2...v0.5.0) (2025-05-21)
+
+
+### Features
+
+* add categories_properties to exported food ([#38](https://github.com/openfoodfacts/openfoodfacts-exports/issues/38)) ([9b32b19](https://github.com/openfoodfacts/openfoodfacts-exports/commit/9b32b198b2100d4dcb33e7a27aae2afba5f85d99))
+* Make the project into a python package ([#36](https://github.com/openfoodfacts/openfoodfacts-exports/issues/36)) ([1a48716](https://github.com/openfoodfacts/openfoodfacts-exports/commit/1a487164e554fd40c941d1722eaafd1514dbfada))
+* use pytest `tmp_path` ([#40](https://github.com/openfoodfacts/openfoodfacts-exports/issues/40)) ([944e17c](https://github.com/openfoodfacts/openfoodfacts-exports/commit/944e17c97a9572799771083f8c21e18f525e98f8))
+
+
+### Bug Fixes
+
+* receipt quantity ([#37](https://github.com/openfoodfacts/openfoodfacts-exports/issues/37)) ([03a8095](https://github.com/openfoodfacts/openfoodfacts-exports/commit/03a80955437c20a63c2932658df1d2305fb9fd43))
+* receipt_quantity to float ([03a8095](https://github.com/openfoodfacts/openfoodfacts-exports/commit/03a80955437c20a63c2932658df1d2305fb9fd43))
+* support new `images` schema by converting to legacy schema ([#41](https://github.com/openfoodfacts/openfoodfacts-exports/issues/41)) ([0163102](https://github.com/openfoodfacts/openfoodfacts-exports/commit/016310241fbc8251bded52f3ee7012380713f7b8))
+* support new images schema by converting to legacy schema ([0163102](https://github.com/openfoodfacts/openfoodfacts-exports/commit/016310241fbc8251bded52f3ee7012380713f7b8))
+
 ## [0.4.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.1...v0.4.2) (2025-03-07)
 
 
