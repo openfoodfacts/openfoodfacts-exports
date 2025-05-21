@@ -3,11 +3,13 @@ import pyarrow as pa
 from pydantic import Field, field_serializer, model_validator
 
 from .common import (
+    PA_CATEGORIES_PROPERTIES_DATATYPE,
     PA_IMAGES_DATATYPE,
     PA_LANGUAGE_FIELD_DATATYPE,
     PA_NUTRIMENTS_DATATYPE,
     PA_OWNER_FIELD_DATATYPE,
     PA_PACKAGING_FIELD_DATATYPE,
+    CategoriesProperties,
     Ingredient,
     LanguageField,
     NutrimentField,
@@ -19,6 +21,7 @@ class FoodProduct(Product):
     additives_n: int | None = None
     additives_tags: list[str] | None = None
     allergens_tags: list[str] | None = None
+    categories_properties: CategoriesProperties | None = None
     ciqual_food_name_tags: list[str] | None = None
     compared_to_category: str | None = None
     ecoscore_data: dict | None = None
@@ -151,6 +154,7 @@ FOOD_PRODUCT_SCHEMA = pa.schema(
         pa.field("brands", pa.string(), nullable=True),
         pa.field("categories", pa.string(), nullable=True),
         pa.field("categories_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("categories_properties", PA_CATEGORIES_PROPERTIES_DATATYPE),
         pa.field("checkers_tags", pa.list_(pa.string()), nullable=True),
         pa.field("ciqual_food_name_tags", pa.list_(pa.string()), nullable=True),
         pa.field("cities_tags", pa.list_(pa.string()), nullable=True),
@@ -263,4 +267,5 @@ FOOD_DTYPE_MAP = {
     "images": PA_IMAGES_DATATYPE,
     "nutriments": PA_NUTRIMENTS_DATATYPE,
     "packagings": PA_PACKAGING_FIELD_DATATYPE,
+    "categories_properties": PA_CATEGORIES_PROPERTIES_DATATYPE,
 }
