@@ -1,5 +1,4 @@
 import shutil
-import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -51,31 +50,30 @@ class TestConvertJSONLToParquet:
         dtype_map: dict[str, pa.DataType],
         output_dir: Path,
         update_results: bool,
+        tmp_path: Path,
     ):
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            dataset_path = Path(tmpdirname) / Path(urlparse(dataset_url).path).name
-            output_filename = Path(urlparse(expected_output_url).path).name
-            output_file_path = Path(tmpdirname) / output_filename
-            download_file(dataset_url, dataset_path)
+        dataset_path = tmp_path / Path(urlparse(dataset_url).path).name
+        output_filename = Path(urlparse(expected_output_url).path).name
+        output_file_path = tmp_path / output_filename
+        download_file(dataset_url, dataset_path)
 
-            is_output_available = requests.head(expected_output_url).status_code == 200
-            convert_jsonl_to_parquet(
-                output_file_path=output_file_path,
-                dataset_path=dataset_path,
-                pydantic_cls=pydantic_cls,
-                schema=schema,
-                dtype_map=dtype_map,
+        is_output_available = requests.head(expected_output_url).status_code == 200
+        convert_jsonl_to_parquet(
+            output_file_path=output_file_path,
+            dataset_path=dataset_path,
+            pydantic_cls=pydantic_cls,
+            schema=schema,
+            dtype_map=dtype_map,
+        )
+
+        if update_results:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(output_file_path, output_dir / output_filename)
+        elif is_output_available:
+            expected_output_file_path = tmp_path / "expected_output.parquet"
+            download_file(expected_output_url, expected_output_file_path)
+            assert (
+                output_file_path.read_bytes() == expected_output_file_path.read_bytes()
             )
-
-            if update_results:
-                output_dir.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(output_file_path, output_dir / output_filename)
-            elif is_output_available:
-                expected_output_file_path = Path(tmpdirname) / "expected_output.parquet"
-                download_file(expected_output_url, expected_output_file_path)
-                assert (
-                    output_file_path.read_bytes()
-                    == expected_output_file_path.read_bytes()
-                )
-            else:
-                raise RuntimeError("No expected output available")
+        else:
+            raise RuntimeError("No expected output available")
