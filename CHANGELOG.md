@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.0...v0.5.1) (2025-06-13)
+
+
+### Bug Fixes
+
+* bump Open Food Facts SDK ([e69e11d](https://github.com/openfoodfacts/openfoodfacts-exports/commit/e69e11d657d92d3e1585186733e92cd956ac72f6))
+
 ## [0.5.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.4.2...v0.5.0) (2025-05-21)
 
 
