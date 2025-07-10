@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.1...v0.5.2) (2025-07-10)
+
+
+### Bug Fixes
+
+* enable pushing mobile dump to S3 in production ([#46](https://github.com/openfoodfacts/openfoodfacts-exports/issues/46)) ([895a44b](https://github.com/openfoodfacts/openfoodfacts-exports/commit/895a44bed6e0cfa59b18a0f1b3818fbd3b30e00d))
+
 ## [0.5.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.0...v0.5.1) (2025-06-13)
 
 
