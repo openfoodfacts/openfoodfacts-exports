@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.1...v0.5.2) (2025-09-18)
+
+
+### Bug Fixes
+
+* enable pushing mobile dump to S3 in production ([#46](https://github.com/openfoodfacts/openfoodfacts-exports/issues/46)) ([895a44b](https://github.com/openfoodfacts/openfoodfacts-exports/commit/895a44bed6e0cfa59b18a0f1b3818fbd3b30e00d))
+* **prices:** increase decimal count to 3 for price related fields ([#49](https://github.com/openfoodfacts/openfoodfacts-exports/issues/49)) ([7e6233e](https://github.com/openfoodfacts/openfoodfacts-exports/commit/7e6233e519b13810ee66cc4ce5c2be906faa3f72))
+
 ## [0.5.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.0...v0.5.1) (2025-06-13)
 
 
