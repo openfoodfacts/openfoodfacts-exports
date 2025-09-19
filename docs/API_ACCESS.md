@@ -10,7 +10,6 @@ Open Food Facts provides multiple ways to access its data, optimized for differe
 |--------|----------|---------|----------------|
 | **Bulk Downloads** | Research, analytics | Low | Daily |
 | **REST API** | Real-time lookups | Medium | Real-time |
-| **GraphQL API** | Flexible queries | Medium | Real-time |
 | **Streaming** | Real-time monitoring | High | Live |
 
 ## Bulk Data Downloads
@@ -210,37 +209,6 @@ https://off-s3-open-data.s3.amazonaws.com/images/{image_path}
 - **Format**: Multiple formats available
 - **Update**: Regular updates
 
-## GraphQL API (Beta)
-
-### Endpoint
-```
-POST https://world.openfoodfacts.org/api/v2/graphql
-```
-
-### Example Query
-```graphql
-query GetProduct($barcode: String!) {
-  product(barcode: $barcode) {
-    code
-    productName
-    brands
-    nutriscoreGrade
-    ingredients {
-      text
-      percent
-    }
-    images {
-      nutrition {
-        sizes {
-          url
-          width
-          height
-        }
-      }
-    }
-  }
-}
-```
 
 ## Rate Limits & Best Practices
 

@@ -21,7 +21,7 @@ Welcome to the Open Food Facts Exports documentation. This directory contains co
 ### [API_ACCESS.md](API_ACCESS.md)
 **Comprehensive API documentation and access methods**
 - Bulk download endpoints
-- Real-time APIs (REST, GraphQL)
+- Real-time APIs (REST API)
 - AWS Open Data integration
 - Rate limits and best practices
 
