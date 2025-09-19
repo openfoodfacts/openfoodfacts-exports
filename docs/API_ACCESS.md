@@ -108,76 +108,9 @@ https://static.openfoodfacts.org/data/en.openfoodfacts.org.products.csv.gz
 
 ## Real-time APIs
 
-### 1. Product Lookup API
+For real-time API access including product lookup, search, and autocomplete functionality, please refer to the official documentation:
 
-#### Single Product
-```
-GET https://world.openfoodfacts.org/api/v2/product/{barcode}
-```
-
-**Examples:**
-```bash
-# Get Nutella data
-curl "https://world.openfoodfacts.org/api/v2/product/3017620422003"
-
-# Get specific fields only  
-curl "https://world.openfoodfacts.org/api/v2/product/3017620422003?fields=code,product_name,nutriscore_grade"
-```
-
-**Response Format:**
-```json
-{
-  "code": "3017620422003",
-  "product": {
-    "product_name": "Nutella",
-    "brands": "Ferrero",
-    "nutriscore_grade": "e",
-    "_id": "3017620422003",
-    // ... full product data
-  },
-  "status": 1,
-  "status_verbose": "product found"
-}
-```
-
-### 2. Search API
-
-#### Advanced Search
-```
-GET https://world.openfoodfacts.org/cgi/search.pl
-```
-
-**Parameters:**
-- `search_terms`: Text search
-- `tagtype_0`: Field to filter on
-- `tag_contains_0`: Filter value
-- `json`: Return JSON format
-- `page_size`: Results per page (max 100)
-- `page`: Page number
-
-**Examples:**
-```bash
-# Search for organic products
-curl "https://world.openfoodfacts.org/cgi/search.pl?search_terms=organic&json=1&page_size=10"
-
-# Filter by Nutri-Score
-curl "https://world.openfoodfacts.org/cgi/search.pl?tagtype_0=nutrition_grades&tag_contains_0=a&json=1"
-
-# Search by brand
-curl "https://world.openfoodfacts.org/cgi/search.pl?tagtype_0=brands&tag_contains_0=ferrero&json=1"
-```
-
-### 3. Autocomplete API
-
-#### Product Suggestions
-```
-GET https://world.openfoodfacts.org/cgi/suggest.pl?tagtype=products&string={query}
-```
-
-**Example:**
-```bash
-curl "https://world.openfoodfacts.org/cgi/suggest.pl?tagtype=products&string=nutella"
-```
+**[Open Food Facts API Documentation](https://openfoodfacts.github.io/openfoodfacts-server/api/)**
 
 ## AWS Open Data Integration
 
@@ -301,6 +234,6 @@ def get_product_robust(barcode, max_retries=3):
 - **Slack**: https://slack.openfoodfacts.org/
 
 ### Documentation
-- **Open Food Facts API Docs**: https://wiki.openfoodfacts.org/API
+- **Open Food Facts API Docs**: https://openfoodfacts.github.io/openfoodfacts-server/api/
 - **AWS Docs**: https://openfoodfacts.github.io/openfoodfacts-server/api/
 - **Data Fields**: https://world.openfoodfacts.org/data/data-fields.txt
