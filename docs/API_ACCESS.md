@@ -301,6 +301,6 @@ def get_product_robust(barcode, max_retries=3):
 - **Slack**: https://slack.openfoodfacts.org/
 
 ### Documentation
-- **Main API Docs**: https://wiki.openfoodfacts.org/API
+- **Open Food Facts API Docs**: https://wiki.openfoodfacts.org/API
 - **AWS Docs**: https://openfoodfacts.github.io/openfoodfacts-server/api/
 - **Data Fields**: https://world.openfoodfacts.org/data/data-fields.txt

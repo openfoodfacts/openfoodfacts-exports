@@ -76,7 +76,7 @@ Welcome to the Open Food Facts Exports documentation. This directory contains co
 
 ## 🔗 External Resources
 
-- **Open Food Facts Main Site**: https://world.openfoodfacts.org/data
+- **Data page on the Open Food Facts Main Site**: https://world.openfoodfacts.org/data
 - **Hugging Face Datasets**: https://huggingface.co/openfoodfacts  
 - **AWS Open Data**: https://aws.amazon.com/marketplace/pp/prodview-j2ukhra3ixcgs
 - **GitHub Repository**: https://github.com/openfoodfacts/openfoodfacts-exports
