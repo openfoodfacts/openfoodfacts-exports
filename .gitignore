@@ -5,12 +5,20 @@ build/
 dist/
 wheels/
 *.egg-info
+.ipynb_checkpoints/
 
 # Virtual environments
 .venv
+venv
 
 # VS Code
 *.code-workspace
 
 # local environment variables
 .envrc
+
+# HuggingFace token
+hf-token
+# sample database
+*.parquet
+*.db

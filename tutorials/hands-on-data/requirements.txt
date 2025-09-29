@@ -1,0 +1,3 @@
+jupyterlab==4.4.8
+jupyterlab-spellchecker==0.8.4
+jupyterlab_execute_time==3.2.0
