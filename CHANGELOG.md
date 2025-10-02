@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.2...v0.5.3) (2025-10-02)
+
+
+### Documentation
+
+* tutorial hands on data ([#52](https://github.com/openfoodfacts/openfoodfacts-exports/issues/52)) ([62acf8d](https://github.com/openfoodfacts/openfoodfacts-exports/commit/62acf8d7c904a674cef3602df03f5d2496c99013))
+
 ## [0.5.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.1...v0.5.2) (2025-09-18)
 
 
