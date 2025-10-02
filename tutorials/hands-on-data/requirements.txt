@@ -1,4 +1,5 @@
 jupyterlab==4.4.8
+# all those dependencies are for commodity only, you might disable them
 jupyterlab-spellchecker==0.8.4
 jupyterlab_execute_time==3.2.0
 jupyterlab-lsp==5.2.0
