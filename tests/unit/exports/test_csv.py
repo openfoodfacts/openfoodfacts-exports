@@ -4,7 +4,7 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from openfoodfacts_exports.exports.csv import generate_mobile_app_dump
+from openfoodfacts_exports.exports.csv.mobile import generate_mobile_app_dump
 
 
 def test_generate_mobile_app_dump_file_not_found():
