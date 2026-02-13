@@ -1,7 +1,9 @@
 import orjson
 import pyarrow as pa
 from pydantic import Field, field_serializer, model_validator
+from openfoodfacts.types import JSONType
 
+from openfoodfacts.types import NutritionV3
 from .common import (
     PA_CATEGORIES_PROPERTIES_DATATYPE,
     PA_IMAGES_DATATYPE,
@@ -77,32 +79,76 @@ class FoodProduct(Product):
     @model_validator(mode="before")
     @classmethod
     def parse_nutriments(cls, data: dict):
-        nutriments = data.pop("nutriments", None)
-        parsed_nutriments: dict[str, dict] = {}
-        nutriments_end_mapping = {
-            "_prepared_100g": "prepared_100g",
-            "_prepared_serving": "prepared_serving",
-            "_prepared_unit": "prepared_unit",
-            "_prepared_value": "prepared_value",
-            "_unit": "unit",
-            "_value": "value",
-            "_100g": "100g",
-            "_serving": "serving",
-        }
-        if nutriments:
-            for key, value in nutriments.items():
-                for end_key, new_key in nutriments_end_mapping.items():
-                    if key.endswith(end_key):
-                        key = key.replace(end_key, "")
-                        parsed_nutriments.setdefault(key, {})
-                        parsed_nutriments[key][new_key] = value
+        schema_version = data.get("schema_version", 999)
+        if schema_version < 1003:
+            nutriments = data.pop("nutriments", None)
+            parsed_nutriments: dict[str, dict] = {}
+            nutriments_end_mapping = {
+                "_prepared_100g": "prepared_100g",
+                "_prepared_serving": "prepared_serving",
+                "_prepared_unit": "prepared_unit",
+                "_prepared_value": "prepared_value",
+                "_unit": "unit",
+                "_value": "value",
+                "_100g": "100g",
+                "_serving": "serving",
+            }
+            if nutriments:
+                for key, value in nutriments.items():
+                    for end_key, new_key in nutriments_end_mapping.items():
+                        if key.endswith(end_key):
+                            key = key.replace(end_key, "")
+                            parsed_nutriments.setdefault(key, {})
+                            parsed_nutriments[key][new_key] = value
 
-            data["nutriments"] = [
-                {"name": key, **value} for key, value in parsed_nutriments.items()
-            ]
-
+                data["nutriments"] = [
+                    {"name": key, **value} for key, value in parsed_nutriments.items()
+                ]
         else:
-            data["nutriments"] = None
+            nutrition = NutritionV3.model_validate(data.get("nutrition", {}))
+            aggregated_set = nutrition.aggregated_set
+            if aggregated_set:
+                per = aggregated_set.per
+                preparation = aggregated_set.preparation
+                nutriments = []
+                for (
+                    nutrient_name,
+                    nutrient_data,
+                ) in aggregated_set.nutrients.items():
+                    item: JSONType = {
+                        "name": nutrient_name,
+                        # value and prepared_value are always kept null here (contrary
+                        # to product with schema version < 1003), as they're ambiguous
+                        "value": None,
+                        "prepared_value": None,
+                        # The rest of the fields are populated if they're found, from
+                        # the aggregated set
+                        "100g": None,
+                        "serving": None,
+                        "unit": None,
+                        "prepared_100g": None,
+                        "prepared_serving": None,
+                        "prepared_unit": None,
+                    }
+                    if preparation == "as_sold":
+                        key = "100g" if per in ("100g", "100ml") else "serving"
+                        item[key] = nutrient_data.value
+                        item["unit"] = nutrient_data.unit
+                    else:
+                        key = (
+                            "prepared_100g"
+                            if per in ("100g", "100ml")
+                            else "prepared_serving"
+                        )
+                        item[key] = nutrient_data.value
+                        item["prepared_unit"] = nutrient_data.unit
+
+                    nutriments.append(item)
+
+                data["nutriments"] = nutriments
+
+        # Make sure that the `nutriments` field is present in `data`
+        data.setdefault("nutriments", None)
         return data
 
     @model_validator(mode="before")
@@ -259,6 +305,7 @@ FOOD_PRODUCT_SCHEMA = pa.schema(
         pa.field("vitamins_tags", pa.list_(pa.string()), nullable=True),
         pa.field("with_non_nutritive_sweeteners", pa.int32(), nullable=True),
         pa.field("with_sweeteners", pa.int32(), nullable=True),
+        pa.field("schema_version", pa.int32(), nullable=True),
     ]
 )
 

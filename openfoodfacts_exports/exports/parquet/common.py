@@ -182,6 +182,8 @@ class Product(BaseModel):
     stores_tags: list[str] | None = None
     stores: str | None = None
     unique_scans_n: int | None = None
+    # If schema version is not provided, we assume it's the first version (999)
+    schema_version: int = 999
 
     @model_validator(mode="before")
     @classmethod
