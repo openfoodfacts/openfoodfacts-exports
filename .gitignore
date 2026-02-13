@@ -4,6 +4,7 @@ __pycache__/
 build/
 dist/
 wheels/
+.cov
 *.egg-info
 .ipynb_checkpoints/
 
@@ -13,6 +14,7 @@ venv
 
 # VS Code
 *.code-workspace
+.vscode
 
 # local environment variables
 .envrc

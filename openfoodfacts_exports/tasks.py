@@ -6,7 +6,7 @@ from openfoodfacts.dataset import DEFAULT_CACHE_DIR
 from openfoodfacts.types import DatasetType
 from openfoodfacts.utils import download_file, should_download_file
 
-from openfoodfacts_exports.exports.csv import generate_push_mobile_app_dump
+from openfoodfacts_exports.exports.csv.mobile import generate_push_mobile_app_dump
 from openfoodfacts_exports.exports.parquet import PARQUET_DATASET_PATH, export_parquet
 from openfoodfacts_exports.exports.parquet.price import PRICE_DATASET_PATH
 from openfoodfacts_exports.exports.parquet.price import (

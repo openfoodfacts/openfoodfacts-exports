@@ -154,6 +154,7 @@ BEAUTY_PRODUCT_SCHEMA = pa.schema(
         pa.field("unknown_ingredients_n", pa.int32(), nullable=True),
         pa.field("unknown_nutrients_tags", pa.list_(pa.string()), nullable=True),
         pa.field("vitamins_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("schema_version", pa.int32(), nullable=True),
     ]
 )
 
