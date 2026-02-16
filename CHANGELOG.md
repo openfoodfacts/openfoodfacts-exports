@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.2...v0.6.0) (2026-02-16)
+
+
+### Features
+
+* support new nutrition schema ([#55](https://github.com/openfoodfacts/openfoodfacts-exports/issues/55)) ([4d6412f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/4d6412f4ede6ec0ce5589a7e419b44a237b8f999))
+
+
+### Documentation
+
+* tutorial hands on data ([#52](https://github.com/openfoodfacts/openfoodfacts-exports/issues/52)) ([62acf8d](https://github.com/openfoodfacts/openfoodfacts-exports/commit/62acf8d7c904a674cef3602df03f5d2496c99013))
+
 ## [0.5.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.1...v0.5.2) (2025-09-18)
 
 
