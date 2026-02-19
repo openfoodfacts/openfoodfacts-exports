@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.0...v0.6.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* fix release please config ([#59](https://github.com/openfoodfacts/openfoodfacts-exports/issues/59)) ([049dd59](https://github.com/openfoodfacts/openfoodfacts-exports/commit/049dd59fdaa9f6d34b74ec1bbce5987201aeb221))
+
 ## [0.6.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.5.2...v0.6.0) (2026-02-16)
 
 
