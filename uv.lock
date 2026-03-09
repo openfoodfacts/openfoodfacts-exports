@@ -480,21 +480,21 @@ wheels = [
 
 [[package]]
 name = "openfoodfacts"
-version = "3.4.4"
+version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "requests" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0e/63/eb7542e4a7d5d3854b6ecab2a969db9805eed47a58f966d959d334c11e17/openfoodfacts-3.4.4.tar.gz", hash = "sha256:eb22c9f603076dca2e1766a92beb03e9899f6c67d2d26708f99be318ce8c1dda", size = 60740, upload-time = "2026-02-19T08:32:24.092Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/a7/ef00ea460ccf326a78f2a78521f0c0c61512c1798759bae78d335ff0646a/openfoodfacts-4.0.0.tar.gz", hash = "sha256:381bbc45ef6d1ca51ca76e223f82c031ea2aaf1881f29348cea0559afcee2160", size = 61331, upload-time = "2026-03-09T17:36:55.198Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/34/b3c6dfdc2e0768c715a86604b1f12f5e961df9052b629e9ff84814b453dc/openfoodfacts-3.4.4-py3-none-any.whl", hash = "sha256:5ec002dbfff7f41bb73eaccf895967d08772e20e5e457f8c656386a1f1578bf3", size = 63598, upload-time = "2026-02-19T08:32:25.575Z" },
+    { url = "https://files.pythonhosted.org/packages/30/3b/34cceb2f095c93e2ec78217b74dfa8e5a36f5a02e005c279c41cea3cb8a9/openfoodfacts-4.0.0-py3-none-any.whl", hash = "sha256:5f7797cc5989ffc52da98cebdd61b4889f1dd3903eef080641bf1e54ed31dc91", size = 64245, upload-time = "2026-03-09T17:36:53.828Z" },
 ]
 
 [[package]]
 name = "openfoodfacts-exports"
-version = "0.6.0"
+version = "0.6.1"
 source = { editable = "." }
 dependencies = [
     { name = "apscheduler" },
@@ -532,7 +532,7 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.26.2" },
     { name = "minio", specifier = ">=7.2.10" },
     { name = "more-itertools", specifier = ">=10.5.0" },
-    { name = "openfoodfacts", specifier = "==3.4.4" },
+    { name = "openfoodfacts", specifier = "==4.0.0" },
     { name = "orjson", specifier = ">=3.10.11" },
     { name = "pyarrow", specifier = ">=18.0.0" },
     { name = "pytz", specifier = ">=2024.2" },
