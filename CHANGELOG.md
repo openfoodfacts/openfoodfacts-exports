@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.1...v0.6.2) (2026-03-09)
+
+
+### Bug Fixes
+
+* fix type issue with Product Opener new nutrition schema ([#62](https://github.com/openfoodfacts/openfoodfacts-exports/issues/62)) ([fc4db91](https://github.com/openfoodfacts/openfoodfacts-exports/commit/fc4db914a63bef993da9f6b5aed04fbd564f1f5d))
+
 ## [0.6.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.0...v0.6.1) (2026-02-19)
 
 
