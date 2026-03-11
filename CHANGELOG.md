@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.2...v0.6.3) (2026-03-11)
+
+
+### Bug Fixes
+
+* catch error while validating Products ([0452b7a](https://github.com/openfoodfacts/openfoodfacts-exports/commit/0452b7a93e4511542e0fc9a49a402d9222eb2d42))
+
 ## [0.6.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.1...v0.6.2) (2026-03-09)
 
 
