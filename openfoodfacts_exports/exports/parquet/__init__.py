@@ -111,7 +111,19 @@ def convert_jsonl_to_parquet(
         # We use by_alias=True because some fields start with a digit
         # (ex: nutriments.100g), and we cannot declare the schema with
         # Pydantic without an alias.
-        products = [pydantic_cls(**item).model_dump(by_alias=True) for item in batch]
+        products = []
+
+        for item in batch:
+            try:
+                product = pydantic_cls(**item).model_dump(by_alias=True)
+            except Exception:
+                logger.warning(
+                    f"Failed to parse item with code {item.get('code', 'unknown')}",
+                    exc_info=True,
+                )
+            else:
+                products.append(product)
+
         keys = products[0].keys()
         data = {
             key: pa.array(
