@@ -31,7 +31,7 @@ def test_generate_mobile_app_dump_with_real_parquet(tmp_path: Path):
                     2, 'c')
                 ) 
             AS t(code, product_name, quantity, brands, nutriscore_grade, nova_group,
-            ecoscore_grade)
+            environmental_score_grade)
         """
     )
 
@@ -55,7 +55,7 @@ def test_generate_mobile_app_dump_with_real_parquet(tmp_path: Path):
             "brands",
             "nutrition_grade_fr",
             "nova_group",
-            "ecoscore_grade",
+            "environmental_score_grade",
         ):
             assert field_name in fields
 
