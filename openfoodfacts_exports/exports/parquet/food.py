@@ -26,10 +26,10 @@ class FoodProduct(Product):
     categories_properties: CategoriesProperties | None = None
     ciqual_food_name_tags: list[str] | None = None
     compared_to_category: str | None = None
-    ecoscore_data: dict | None = None
-    ecoscore_grade: str | None = None
-    ecoscore_score: int | None = None
-    ecoscore_tags: list[str] | None = None
+    environmental_score_data: dict | None = None
+    environmental_score_grade: str | None = None
+    environmental_score_score: int | None = None
+    environmental_score_tags: list[str] | None = None
     emb_codes_tags: list[str] | None = None
     emb_codes: str | None = None
     food_groups_tags: list[str] | None = None
@@ -153,12 +153,12 @@ class FoodProduct(Product):
 
     @model_validator(mode="before")
     @classmethod
-    def parse_ecoscore_score(cls, data: dict):
-        ecoscore_score = data.get("ecoscore_score")
-        if ecoscore_score and isinstance(ecoscore_score, float):
-            # Some `ecoscore_score` are float, we need to convert them to int
+    def parse_environmental_score_score(cls, data: dict):
+        environmental_score_score = data.get("environmental_score_score")
+        if environmental_score_score and isinstance(environmental_score_score, float):
+            # Some `environmental_score_score` are float, we need to convert them to int
             # to prevent Pydantic from raising an error
-            data["ecoscore_score"] = int(ecoscore_score)
+            data["environmental_score_score"] = int(environmental_score_score)
 
         return data
 
@@ -182,13 +182,15 @@ class FoodProduct(Product):
             return None
         return orjson.dumps([ing.model_dump() for ing in ingredients]).decode("utf-8")
 
-    @field_serializer("ecoscore_data")
-    def serialize_ecoscore_data(self, ecoscore_data: dict | None, _info) -> str | None:
-        """Ecoscore data is a complex structure, leave it as a JSON string for
-        now."""
-        if ecoscore_data is None:
+    @field_serializer("environmental_score_data")
+    def serialize_environmental_score_data(
+        self, environmental_score_data: dict | None, _info
+    ) -> str | None:
+        """Environmental score data is a complex structure, leave it as a JSON string
+        for now."""
+        if environmental_score_data is None:
             return None
-        return orjson.dumps(ecoscore_data).decode("utf-8")
+        return orjson.dumps(environmental_score_data).decode("utf-8")
 
 
 FOOD_PRODUCT_SCHEMA = pa.schema(
@@ -216,10 +218,10 @@ FOOD_PRODUCT_SCHEMA = pa.schema(
         pa.field("data_quality_info_tags", pa.list_(pa.string()), nullable=True),
         pa.field("data_quality_warnings_tags", pa.list_(pa.string()), nullable=True),
         pa.field("data_sources_tags", pa.list_(pa.string()), nullable=True),
-        pa.field("ecoscore_data", pa.string(), nullable=True),
-        pa.field("ecoscore_grade", pa.string(), nullable=True),
-        pa.field("ecoscore_score", pa.int32(), nullable=True),
-        pa.field("ecoscore_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("environmental_score_data", pa.string(), nullable=True),
+        pa.field("environmental_score_grade", pa.string(), nullable=True),
+        pa.field("environmental_score_score", pa.int32(), nullable=True),
+        pa.field("environmental_score_tags", pa.list_(pa.string()), nullable=True),
         pa.field("editors", pa.list_(pa.string()), nullable=True),
         pa.field("emb_codes_tags", pa.list_(pa.string()), nullable=True),
         pa.field("emb_codes", pa.string(), nullable=True),

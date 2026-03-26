@@ -25,7 +25,7 @@ COPY (
         brands,
         nutriscore_grade AS nutrition_grade_fr,
         nova_group,
-        ecoscore_grade,
+        environmental_score_grade,
     FROM read_parquet('{dataset_path}')
 ) TO '{output_path}' (HEADER, DELIMITER '\t')
 ;
