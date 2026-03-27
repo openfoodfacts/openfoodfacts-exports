@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.3...v0.6.4) (2026-03-26)
+
+
+### Bug Fixes
+
+* ecoscore_* fields were renamed into environmental_score_* ([#65](https://github.com/openfoodfacts/openfoodfacts-exports/issues/65)) ([1294b1c](https://github.com/openfoodfacts/openfoodfacts-exports/commit/1294b1c2203185fa89ff7314710771a115c5a4a0))
+
 ## [0.6.3](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.2...v0.6.3) (2026-03-11)
 
 
