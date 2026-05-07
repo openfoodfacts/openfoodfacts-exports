@@ -1,0 +1,67 @@
+name: Check Exports
+
+on:
+  schedule:
+    # Run every day at 10:00 UTC.  The export scheduler fires at 16:00 UTC, so
+    # by the following morning all exports should have been regenerated.
+    - cron: "0 10 * * *"
+  workflow_dispatch: {}  # allow manual runs for testing
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write   # needed to create / edit the tracking issue
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run export checks
+        id: run_check
+        # Always continue so we can post the report even on failure
+        continue-on-error: true
+        run: python .github/scripts/check_exports.py --output-file /tmp/report.md
+
+      - name: Ensure the tracking label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "export-check" \
+            --description "Automated daily export-check report" \
+            --color "0075ca" \
+            || true   # ignore error if label already exists
+
+      - name: Create or update tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPORT="$(cat /tmp/report.md)"
+
+          # Search for an existing open tracking issue by label
+          ISSUE_NUMBER=$(
+            gh issue list \
+              --label "export-check" \
+              --state open \
+              --json number \
+              --jq '.[0].number' \
+              2>/dev/null || true
+          )
+
+          if [ -n "$ISSUE_NUMBER" ]; then
+            echo "Updating existing issue #${ISSUE_NUMBER}"
+            gh issue edit "$ISSUE_NUMBER" --body "$REPORT"
+          else
+            echo "Creating new tracking issue"
+            gh issue create \
+              --title "Daily Export Check Report" \
+              --label "export-check" \
+              --body "$REPORT"
+          fi
