@@ -11,9 +11,12 @@ def run_scheduler():
     from openfoodfacts.utils import get_logger
 
     from openfoodfacts_exports.scheduler import run
+    from openfoodfacts_exports.utils import init_sentry
 
     # configure root logger
     get_logger()
+    init_sentry()
+
     run()
 
 
@@ -24,9 +27,11 @@ def run_update_listener():
     from openfoodfacts.utils import get_logger
 
     from openfoodfacts_exports.update_listener import run_update_listener
+    from openfoodfacts_exports.utils import init_sentry
 
     # configure root logger
     get_logger()
+    init_sentry()
     run_update_listener()
 
 
@@ -35,10 +40,12 @@ def run_worker(queues: list[str], burst: bool = False):
     """Run a worker for the given queues."""
     from openfoodfacts.utils import get_logger
 
+    from openfoodfacts_exports.utils import init_sentry
     from openfoodfacts_exports.workers.main import run
 
     # configure root logger
     get_logger()
+    init_sentry()
     run(queues, burst)
 
 

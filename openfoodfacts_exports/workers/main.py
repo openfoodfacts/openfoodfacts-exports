@@ -2,11 +2,7 @@ import sys
 
 from rq import Worker
 
-from openfoodfacts_exports.utils import init_sentry
-
 from .redis import redis_conn
-
-init_sentry()
 
 
 def run(queues: list[str], burst: bool = False):
