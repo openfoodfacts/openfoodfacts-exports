@@ -3,6 +3,7 @@ import io
 import logging
 from pathlib import Path
 
+import requests
 from openfoodfacts import Environment, Flavor, get_dataset
 from openfoodfacts.dataset import DEFAULT_CACHE_DIR
 from openfoodfacts.images import (
@@ -142,6 +143,12 @@ def upload_new_image_to_s3(
         return
 
     client = get_minio_client()
+    session = requests.Session()
+    session.headers.update(
+        {
+            "User-Agent": settings.USER_AGENT,
+        }
+    )
     for image_prefix in (image_id, f"{image_id}.400"):
         image_url = generate_image_url(
             barcode,
@@ -149,7 +156,9 @@ def upload_new_image_to_s3(
             flavor=flavor,
             environment=environment,
         )
-        image_asset = get_asset_from_url(asset_url=image_url, error_raise=False)
+        image_asset = get_asset_from_url(
+            asset_url=image_url, error_raise=False, session=session
+        )
         image_base_path = _generate_file_path(
             code=barcode, image_id=image_prefix, suffix=".jpg"
         )
@@ -171,7 +180,9 @@ def upload_new_image_to_s3(
         flavor=flavor,
         environment=environment,
     )
-    ocr_asset = get_asset_from_url(asset_url=ocr_url, error_raise=False)
+    ocr_asset = get_asset_from_url(
+        asset_url=ocr_url, error_raise=False, session=session
+    )
     ocr_base_path = _generate_file_path(
         code=barcode, image_id=image_id, suffix=".json.gz"
     )

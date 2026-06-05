@@ -34,3 +34,5 @@ PRODUCT_UPDATE_STREAM_NAME = os.environ.get(
 REDIS_LATEST_ID_KEY = os.environ.get(
     "REDIS_LATEST_ID_KEY", "openfoodfacts_exports:product_updates:latest_id"
 )
+
+USER_AGENT = os.environ.get("USER_AGENT", "openfoodfacts-export")
