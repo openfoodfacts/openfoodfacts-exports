@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.3](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.2...v0.7.3) (2026-06-05)
+
+
+### Bug Fixes
+
+* add User-Agent when downloading images ([3e4f5a6](https://github.com/openfoodfacts/openfoodfacts-exports/commit/3e4f5a63cbc7ca662b2597cb6e8eb07244de36cc))
+* always initialize sentry when running CLI commands ([6b42fbf](https://github.com/openfoodfacts/openfoodfacts-exports/commit/6b42fbf9e4dcb6486c709d47c0f7edf7fca6ca02))
+
 ## [0.7.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.1...v0.7.2) (2026-06-05)
 
 
