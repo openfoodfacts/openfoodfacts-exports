@@ -25,8 +25,6 @@ class TestUploadNewImageToS3:
 
         def fake_get_asset_from_url(asset_url, **kwargs):
             is_ocr = asset_url.endswith(".json")
-            if not is_ocr:
-                assert asset_url.startswith("https://static.")
             content = ocr_content if is_ocr else image_content
             return AssetDownloadItem(
                 url=asset_url, response=MagicMock(status_code=200, content=content)

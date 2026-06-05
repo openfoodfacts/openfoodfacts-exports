@@ -1,4 +1,5 @@
 import logging
+import time
 
 import backoff
 from openfoodfacts import Environment, Flavor
@@ -47,6 +48,14 @@ class UpdateListener(BaseUpdateListener):
             Environment.org if settings.ENVIRONMENT == "prod" else Environment.net
         )
         flavor = Flavor[event.flavor]
+
+        # The redis event is sometimes published before Product Opener finishes
+        # to process the uploaded image, so we wait 2 seconds before processing
+        # the upload
+        if time.time() - event.timestamp.timestamp() < 2:
+            logger.info("Waiting 2 seconds before processing the upload")
+            time.sleep(2)
+
         upload_new_image_to_s3(
             image_id=image_id,
             barcode=event.code,
