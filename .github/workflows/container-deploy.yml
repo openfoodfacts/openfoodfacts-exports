@@ -120,6 +120,9 @@ jobs:
             echo "TAG=sha-${{ github.sha }}" >> .env
             echo "RESTART_POLICY=always" >> .env
 
+            # Common network
+            echo "COMMON_NET_NAME=po_webnet" >> .env
+
             # Redis configuration
             echo "REDIS_UPDATE_HOST=${{ env.REDIS_UPDATE_HOST }}" >> .env
             echo "REDIS_UPDATE_PORT=${{ env.REDIS_UPDATE_PORT }}" >> .env
@@ -150,6 +153,7 @@ jobs:
           script: |
             cd ${{ matrix.env }}
             make create_external_volumes
+            make create_external_networks
 
       - name: Start services
         uses: appleboy/ssh-action@master

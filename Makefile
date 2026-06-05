@@ -37,7 +37,7 @@ goodbye:
 #-------#
 # Local #
 #-------#
-dev: hello build up
+dev: hello build create_external_networks up
 
 #----------------#
 # Docker Compose #
@@ -76,7 +76,7 @@ status:
 
 log:
 	@echo "🥫 Reading logs (docker-compose) …"
-	${DOCKER_COMPOSE} logs -f --tail 100 scheduler workers
+	${DOCKER_COMPOSE} logs -f --tail 100 scheduler workers update-listener
 
 
 
@@ -132,6 +132,10 @@ create_external_volumes:
 	docker volume create off-exports_cache
 	docker volume create off-exports_redis-data
 	docker volume create off-exports_datasets
+
+create_external_networks:
+	@echo "🥫 Creating external networks if needed… (dev only)"
+	( docker network create ${COMMON_NET_NAME} || true )
 
 #---------#
 # Cleanup #

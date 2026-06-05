@@ -13,6 +13,8 @@ x-service-base-env: &service-base-env
   ENVIRONMENT:
   SENTRY_DSN:
   REDIS_HOST:
+  REDIS_UPDATE_HOST:
+  REDIS_UPDATE_PORT:
   ENABLE_HF_PUSH:
   ENABLE_S3_PUSH:
   HF_TOKEN: # Hugging Face token to push to the dataset hub
@@ -43,6 +45,8 @@ services:
     environment: *service-base-env
     command: python3 -m openfoodfacts_exports run-update-listener
     mem_limit: 1g
+    networks:
+      - common_net
 
   redis:
     restart: $RESTART_POLICY
@@ -69,3 +73,6 @@ volumes:
 
 networks:
   default:
+  common_net:
+    name: ${COMMON_NET_NAME}
+    external: true
