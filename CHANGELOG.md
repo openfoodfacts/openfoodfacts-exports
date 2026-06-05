@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.4...v0.7.0) (2026-06-05)
+
+
+### Features
+
+* add an update listener that updates images on S3 ([#71](https://github.com/openfoodfacts/openfoodfacts-exports/issues/71)) ([2c29798](https://github.com/openfoodfacts/openfoodfacts-exports/commit/2c29798f65690bcc18d065898c9b8340ebaf7e32))
+
 ## [0.6.4](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.3...v0.6.4) (2026-03-26)
 
 
