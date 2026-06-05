@@ -1,18 +1,15 @@
-x-base-volumes:
-  &base-volumes
+x-base-volumes: &base-volumes
   - home_cache:/home/off/.cache
   - tmp:/tmp
   - datasets:/app/datasets
 
-x-service-base:
-  &service-base
+x-service-base: &service-base
   restart: $RESTART_POLICY
   # this image is built with target=runtime, so it won't have the dev dependencies
   image: ghcr.io/openfoodfacts/openfoodfacts-exports:${TAG}
   volumes: *base-volumes
 
-x-service-base-env:
-  &service-base-env
+x-service-base-env: &service-base-env
   ENVIRONMENT:
   SENTRY_DSN:
   REDIS_HOST:
@@ -21,7 +18,6 @@ x-service-base-env:
   HF_TOKEN: # Hugging Face token to push to the dataset hub
   AWS_ACCESS_KEY:
   AWS_SECRET_KEY:
-
 
 services:
   scheduler:
@@ -41,6 +37,12 @@ services:
       - redis
     deploy:
       replicas: ${NUM_RQ_WORKERS:-4}
+
+  update-listener:
+    <<: *service-base
+    environment: *service-base-env
+    command: python3 -m openfoodfacts_exports run-update-listener
+    mem_limit: 1g
 
   redis:
     restart: $RESTART_POLICY
