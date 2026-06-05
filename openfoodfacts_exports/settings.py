@@ -20,3 +20,17 @@ ENABLE_HF_PUSH = int(os.getenv("ENABLE_HF_PUSH", "0"))
 ENABLE_S3_PUSH = int(os.getenv("ENABLE_S3_PUSH", "0"))
 
 AWS_S3_DATASET_BUCKET = os.getenv("AWS_S3_DATASET_BUCKET", "openfoodfacts-ds")
+AWS_S3_IMAGE_BUCKET = os.getenv("AWS_S3_IMAGE_BUCKET", "openfoodfacts-images")
+
+# Remote Redis where Product Opener publishes product updates in a stream
+REDIS_UPDATE_HOST = os.environ.get("REDIS_UPDATE_HOST", "localhost")
+REDIS_UPDATE_PORT = int(os.environ.get("REDIS_UPDATE_PORT", 6379))
+
+
+# Name of the Redis stream where Product Opener publishes product updates
+PRODUCT_UPDATE_STREAM_NAME = os.environ.get(
+    "PRODUCT_UPDATE_STREAM_NAME", "product_updates"
+)
+REDIS_LATEST_ID_KEY = os.environ.get(
+    "REDIS_LATEST_ID_KEY", "openfoodfacts_exports:product_updates:latest_id"
+)
