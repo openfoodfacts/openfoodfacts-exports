@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.0...v0.7.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* use static.openfoodfacts.org subdomain when syncing images to S3 ([#73](https://github.com/openfoodfacts/openfoodfacts-exports/issues/73)) ([2ec124f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/2ec124faa4be8272c0588876e0ae161d53afd860))
+
 ## [0.7.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.6.4...v0.7.0) (2026-06-05)
 
 
