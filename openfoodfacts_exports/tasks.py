@@ -149,6 +149,14 @@ def upload_new_image_to_s3(
             flavor=flavor,
             environment=environment,
         )
+        # Images are not yet available on images.openfoodfacts.org proxy,
+        # so we query the source (static.openfoodfacts.org) directly.
+        if not image_url.startswith("https://images."):
+            raise RuntimeError(
+                f"image_url {image_url} does not start with https://images."
+            )
+        # Replace images subdomain with static subdomain
+        image_url = image_url.replace("https://images.", "https://static.")
         image_asset = get_asset_from_url(asset_url=image_url, error_raise=False)
         image_base_path = _generate_file_path(
             code=barcode, image_id=image_prefix, suffix=".jpg"
