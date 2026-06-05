@@ -18,6 +18,19 @@ def run_scheduler():
 
 
 @app.command()
+def run_update_listener():
+    """Run the update listener, that listen for product updates and triggers appropriate
+    actions."""
+    from openfoodfacts.utils import get_logger
+
+    from openfoodfacts_exports.update_listener import run_update_listener
+
+    # configure root logger
+    get_logger()
+    run_update_listener()
+
+
+@app.command()
 def run_worker(queues: list[str], burst: bool = False):
     """Run a worker for the given queues."""
     from openfoodfacts.utils import get_logger
