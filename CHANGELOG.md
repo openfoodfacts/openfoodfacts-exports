@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.1...v0.7.2) (2026-06-05)
+
+
+### Bug Fixes
+
+* wait 2s before processing image upload if event arrived too early ([f48027e](https://github.com/openfoodfacts/openfoodfacts-exports/commit/f48027e8cea0f311f2ca030662ac07a1e1833cce))
+
 ## [0.7.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.0...v0.7.1) (2026-06-05)
 
 
