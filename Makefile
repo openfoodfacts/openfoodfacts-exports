@@ -84,25 +84,31 @@ log:
 # Quality    #
 #------------#
 toml-check:
-	${DOCKER_COMPOSE} run --rm --no-deps api poetry run toml-sort --check poetry.toml pyproject.toml
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler toml-sort --check pyproject.toml
 
 toml-lint:
-	${DOCKER_COMPOSE} run --rm --no-deps api poetry run toml-sort --in-place poetry.toml pyproject.toml
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler toml-sort --in-place pyproject.toml
 
 mypy:
-	${DOCKER_COMPOSE} run --rm --no-deps api mypy .
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler mypy .
 
 docs:
 	@echo "🥫 Generationg doc…"
-	${DOCKER_COMPOSE} run --rm --no-deps api ./build_mkdocs.sh
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler ./build_mkdocs.sh
 
-checks: toml-check flake8 black-check mypy isort-check docs
+checks: toml-check ruff-check mypy docs
 
-lint: toml-lint isort black
+lint: toml-lint ruff
 
 tests: unit-tests integration-tests
 
 quality: lint checks tests
+
+ruff:
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler ruff format
+
+ruff-check:
+	${DOCKER_COMPOSE} run --rm --no-deps scheduler ruff check
 
 unit-tests:
 	@echo "🥫 Running tests …"
@@ -118,7 +124,7 @@ integration-tests:
 # usage: make pytest args='test/unit/my-test.py --pdb'
 pytest: guard-args
 	@echo "🥫 Running test: ${args} …"
-	${DOCKER_COMPOSE_TEST} run --rm worker_1 poetry run pytest ${args}
+	${DOCKER_COMPOSE_TEST} run --rm scheduler pytest ${args}
 
 
 #------------#
