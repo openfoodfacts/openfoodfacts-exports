@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.8.0...v0.8.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* add content-type when uploading revisions ([0121b38](https://github.com/openfoodfacts/openfoodfacts-exports/commit/0121b3894f3278061bc2dbde78ab120278b90ce0))
+
 ## [0.8.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.3...v0.8.0) (2026-06-11)
 
 
