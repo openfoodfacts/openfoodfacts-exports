@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.3...v0.8.0) (2026-06-11)
+
+
+### Features
+
+* export new product revisions to S3 ([#77](https://github.com/openfoodfacts/openfoodfacts-exports/issues/77)) ([ea2b151](https://github.com/openfoodfacts/openfoodfacts-exports/commit/ea2b151e1248a30ba45199e0703c2191452aef85))
+
+
+### Bug Fixes
+
+* lint utils.py ([eec86fa](https://github.com/openfoodfacts/openfoodfacts-exports/commit/eec86fa25c3fe4cc65a7df68b61f2d01634dd6f4))
+
 ## [0.7.3](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.7.2...v0.7.3) (2026-06-05)
 
 
