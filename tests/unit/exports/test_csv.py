@@ -60,8 +60,7 @@ def test_generate_mobile_app_dump_with_real_parquet(tmp_path: Path):
             assert field_name in fields
 
         assert lines[1].strip() == (
-            "1234567890123\tMuesli aux fruits\t500 g\tCarrefour,Carrefour bio"
-            "\ta\t4\ta"
+            "1234567890123\tMuesli aux fruits\t500 g\tCarrefour,Carrefour bio\ta\t4\ta"
         )
         assert lines[2].strip() == "1234567890124\tBanana\t1\tChiquita\tb\t3\tb"
         assert (

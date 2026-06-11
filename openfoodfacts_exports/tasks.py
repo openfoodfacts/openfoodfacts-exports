@@ -317,6 +317,7 @@ def upload_revision(
         object_name=revision_path,
         data=fp,
         length=len(product_bytes),
+        content_type="application/json",
     )
     if set_as_latest:
         logger.info(
@@ -332,6 +333,7 @@ def upload_revision(
             object_name=latest_path,
             data=fp,
             length=len(product_bytes),
+            content_type="application/json",
         )
 
 
