@@ -46,6 +46,13 @@ class UpdateListener(BaseUpdateListener):
             delete_product_from_s3(barcode=event.code)
         elif action == "updated":
             logger.info("Product %s has been updated", event.code)
+            # The redis event is sometimes published before Product Opener finishes
+            # to process the request responsible for the change, so we wait 2 seconds
+            # before processing the upload
+            if time.time() - event.timestamp.timestamp() < 2:
+                logger.debug("Waiting 2 seconds before processing the upload")
+                time.sleep(2)
+
             self.process_product_update(event, environment, flavor)
             if event.is_image_upload():
                 self.process_image_upload(event, environment, flavor)
@@ -71,13 +78,6 @@ class UpdateListener(BaseUpdateListener):
         # A new image was uploaded
         image_id = event.diffs["uploaded_images"]["add"][0]  # type: ignore
         logger.info("Image %s was added on product %s", image_id, event.code)
-
-        # The redis event is sometimes published before Product Opener finishes
-        # to process the uploaded image, so we wait 2 seconds before processing
-        # the upload
-        if time.time() - event.timestamp.timestamp() < 2:
-            logger.info("Waiting 2 seconds before processing the upload")
-            time.sleep(2)
 
         upload_new_image_to_s3(
             image_id=image_id,
