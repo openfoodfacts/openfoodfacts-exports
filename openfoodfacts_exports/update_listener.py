@@ -9,7 +9,12 @@ from redis import Redis
 from redis.exceptions import ConnectionError
 
 from openfoodfacts_exports import settings
-from openfoodfacts_exports.tasks import delete_image_from_s3, upload_new_image_to_s3
+from openfoodfacts_exports.tasks import (
+    delete_image_from_s3,
+    delete_product_from_s3,
+    sync_product_revision,
+    upload_new_image_to_s3,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,23 +36,41 @@ class UpdateListener(BaseUpdateListener):
             logger.warning("Product code is empty or null ('%s'), skipping", event.code)
             return
 
-        action = event.action
-        if action == "deleted":
-            logger.info("Product %s has been deleted", event.code)
-        elif action == "updated":
-            if event.is_image_upload():
-                self.process_image_upload(event)
-            elif event.is_image_deletion():
-                self.process_image_deletion(event)
-
-    def process_image_upload(self, event: ProductUpdateEvent):
-        # A new image was uploaded
-        image_id = event.diffs["uploaded_images"]["add"][0]  # type: ignore
-        logger.info("Image %s was added on product %s", image_id, event.code)
         environment = (
             Environment.org if settings.ENVIRONMENT == "prod" else Environment.net
         )
+        action = event.action
         flavor = Flavor[event.flavor]
+        if action == "deleted":
+            logger.info("Product %s has been deleted", event.code)
+            delete_product_from_s3(barcode=event.code)
+        elif action == "updated":
+            logger.info("Product %s has been updated", event.code)
+            self.process_product_update(event, environment, flavor)
+            if event.is_image_upload():
+                self.process_image_upload(event, environment, flavor)
+            elif event.is_image_deletion():
+                self.process_image_deletion(event)
+
+    def process_product_update(
+        self, event: ProductUpdateEvent, environment: Environment, flavor: Flavor
+    ):
+        logger.info(
+            "Syncing product revision for barcode %s (flavor: %s, environment: %s)",
+            event.code,
+            flavor,
+            environment,
+        )
+        sync_product_revision(
+            barcode=event.code, environment=environment, flavor=flavor
+        )
+
+    def process_image_upload(
+        self, event: ProductUpdateEvent, environment: Environment, flavor: Flavor
+    ):
+        # A new image was uploaded
+        image_id = event.diffs["uploaded_images"]["add"][0]  # type: ignore
+        logger.info("Image %s was added on product %s", image_id, event.code)
 
         # The redis event is sometimes published before Product Opener finishes
         # to process the uploaded image, so we wait 2 seconds before processing
