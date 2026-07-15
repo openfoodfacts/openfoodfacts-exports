@@ -189,6 +189,10 @@ class TestUploadRevision:
         assert mock_client.put_object.call_args.kwargs["length"] == len(
             orjson.dumps(product)
         )
+        assert (
+            mock_client.put_object.call_args.kwargs["content_type"]
+            == "application/json"
+        )
 
     def test_upload_revision_set_as_latest(self, mocker):
         mock_client = mocker.MagicMock()
@@ -214,3 +218,4 @@ class TestUploadRevision:
         put_object_product = json.load(fp)
         assert put_object_product == product
         assert set_as_latest_call.kwargs["length"] == len(orjson.dumps(product))
+        assert set_as_latest_call.kwargs["content_type"] == "application/json"
