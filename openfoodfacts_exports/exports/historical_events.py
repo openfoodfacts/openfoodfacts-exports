@@ -25,31 +25,31 @@ Redis stream or the API. Those integrations (live capture and backlog
 backfill) are wired separately on top of these functions.
 """
 
+import enum
 import gzip
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
 import orjson
 from openfoodfacts.types import JSONType
+from pydantic import BaseModel
+
 
 # Per-field change operations, as found in Product Opener revision diffs.
-ADD = "add"
-CHANGE = "change"
-DELETE = "delete"
-ACTIONS = (ADD, CHANGE, DELETE)
+class ChangeAction(enum.StrEnum):
+    ADD = "add"
+    CHANGE = "change"
+    DELETE = "delete"
 
 
-@dataclass(frozen=True)
-class FieldChange:
+class FieldChange(BaseModel):
     """A single field change extracted from a revision diff."""
 
     field: str
-    action: str  # one of ACTIONS
+    action: ChangeAction
 
 
-@dataclass(frozen=True)
-class RevisionInfo:
+class RevisionInfo(BaseModel):
     """Metadata about a single product revision.
 
     These fields are denormalised onto every event row generated for the
@@ -97,7 +97,7 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
         if not isinstance(category_value, dict):
             continue
         for action, fields in category_value.items():
-            if action not in ACTIONS or not fields:
+            if action not in ChangeAction or not fields:
                 continue
             for field in fields:
                 key = (field, action)
@@ -161,12 +161,12 @@ def generate_events(
     for change in flatten_diffs(diffs):
         previous_value = (
             None
-            if change.action == ADD
+            if change.action == ChangeAction.ADD
             else resolve_field_value(previous_product, change.field)
         )
         current_value = (
             None
-            if change.action == DELETE
+            if change.action == ChangeAction.DELETE
             else resolve_field_value(current_product, change.field)
         )
         events.append(
