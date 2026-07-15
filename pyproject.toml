@@ -21,7 +21,7 @@ name = "openfoodfacts-exports"
 version = "0.8.1"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "apscheduler>=3.10.4",
   "backoff~=2.2.1",
