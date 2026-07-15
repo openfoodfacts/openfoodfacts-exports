@@ -27,12 +27,15 @@ backfill) are wired separately on top of these functions.
 
 import enum
 import gzip
+import logging
 from pathlib import Path
 from typing import Any, Iterable
 
 import orjson
 from openfoodfacts.types import JSONType
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 # Per-field change operations, as found in Product Opener revision diffs.
@@ -97,7 +100,11 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
         if not isinstance(category_value, dict):
             continue
         for action, fields in category_value.items():
-            if action not in ChangeAction or not fields:
+            if action not in ChangeAction:
+                logger.warning(f"Unknown action: {action}")
+                continue
+            if not fields:
+                logger.warning(f"Unexpected empty fields: {category_value}")
                 continue
             for field in fields:
                 key = (field, action)
