@@ -3,6 +3,7 @@ import gzip
 import orjson
 
 from openfoodfacts_exports.exports.historical_events import (
+    ChangeAction,
     FieldChange,
     RevisionInfo,
     flatten_diffs,
@@ -25,17 +26,17 @@ class TestFlattenDiffs:
             "nutriments": {"change": ["energy"]},
         }
         assert flatten_diffs(diffs) == [
-            FieldChange(field="brands", action="change"),
-            FieldChange(field="energy", action="change"),
+            FieldChange(field="brands", action=ChangeAction.CHANGE),
+            FieldChange(field="energy", action=ChangeAction.CHANGE),
         ]
 
     def test_keeps_every_operation(self):
         """add, change and delete operations are all preserved."""
         diffs = {"fields": {"add": ["labels"], "change": ["brands"], "delete": ["url"]}}
         assert flatten_diffs(diffs) == [
-            FieldChange(field="labels", action="add"),
-            FieldChange(field="brands", action="change"),
-            FieldChange(field="url", action="delete"),
+            FieldChange(field="labels", action=ChangeAction.ADD),
+            FieldChange(field="brands", action=ChangeAction.CHANGE),
+            FieldChange(field="url", action=ChangeAction.DELETE),
         ]
 
     def test_ignores_unknown_operations_and_empty_lists(self):
@@ -49,7 +50,9 @@ class TestFlattenDiffs:
             "fields": {"change": ["brands"]},
             "nutriments": {"change": ["brands"]},
         }
-        assert flatten_diffs(diffs) == [FieldChange(field="brands", action="change")]
+        assert flatten_diffs(diffs) == [
+            FieldChange(field="brands", action=ChangeAction.CHANGE)
+        ]
 
 
 class TestResolveFieldValue:
