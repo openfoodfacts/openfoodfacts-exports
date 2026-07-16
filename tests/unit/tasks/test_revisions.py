@@ -4,6 +4,7 @@ import orjson
 from openfoodfacts import APIVersion
 
 from openfoodfacts_exports.tasks import revisions
+from openfoodfacts_exports.tasks.revisions import strip_product_from_user_ids
 
 
 class TestUploadRevision:
@@ -64,3 +65,83 @@ class TestUploadRevision:
         assert put_object_product == product
         assert set_as_latest_call.kwargs["length"] == len(orjson.dumps(product))
         assert set_as_latest_call.kwargs["content_type"] == "application/json"
+
+
+def test_strip_product_from_user_ids():
+    user_id = "user"
+    product_legacy_image_schema = {
+        "label_tags": ["en:organic"],
+        "code": "3245968594852",
+        "checkers_tags": [user_id],
+        "correctors_tags": [user_id],
+        "creator": user_id,
+        "editors_tags": [user_id],
+        "informers_tags": [user_id],
+        "last_checker": user_id,
+        "last_editor": user_id,
+        "last_modified_by": user_id,
+        "photographers_tags": [user_id],
+        "images": {
+            "1": {
+                "sizes": {},
+                "uploader": user_id,
+                "uploaded_t": "1520424046",
+            },
+            "front_de": {
+                "imgid": 1,
+                "rev": 11,
+            },
+        },
+    }
+    assert strip_product_from_user_ids(product_legacy_image_schema) == {
+        "label_tags": ["en:organic"],
+        "code": "3245968594852",
+        "images": {
+            "1": {
+                "sizes": {},
+                "uploaded_t": "1520424046",
+            },
+            "front_de": {
+                "imgid": 1,
+                "rev": 11,
+            },
+        },
+    }
+    product_new_image_schema = product_legacy_image_schema.copy()
+    product_new_image_schema["images"] = {
+        "uploaded": {
+            "1": {
+                "sizes": {},
+                "uploaded_t": "1520424046",
+                "uploader": user_id,
+            }
+        },
+        "selected": {
+            "front": {
+                "de": {
+                    "imgid": 1,
+                    "rev": 11,
+                }
+            }
+        },
+    }
+    assert strip_product_from_user_ids(product_new_image_schema) == {
+        "label_tags": ["en:organic"],
+        "code": "3245968594852",
+        "images": {
+            "uploaded": {
+                "1": {
+                    "sizes": {},
+                    "uploaded_t": "1520424046",
+                }
+            },
+            "selected": {
+                "front": {
+                    "de": {
+                        "imgid": 1,
+                        "rev": 11,
+                    }
+                }
+            },
+        },
+    }

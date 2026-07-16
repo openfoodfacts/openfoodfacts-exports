@@ -14,6 +14,49 @@ from openfoodfacts_exports.utils import get_minio_client
 logger = logging.getLogger(__name__)
 
 
+def strip_product_from_user_ids(product: JSONType) -> JSONType:
+    """Strip the product from any user ID, so that we respect the right of the user to
+    be forgotten. This function is intended to be used when saving historical data, so
+    that we don't have to modify these files when a user ask for account deletion."""
+    product = product.copy()
+    for field_name in list(
+        k
+        for k in product.keys()
+        if k
+        in {
+            "checkers_tags",
+            "correctors_tags",
+            "creator",
+            "editors_tags",
+            "informers_tags",
+            "last_checker",
+            "last_editor",
+            "last_modified_by",
+            "photographers_tags",
+        }
+    ):
+        product.pop(field_name)
+
+    images = product.get("images", {})
+
+    if "uploaded" in images:
+        # New images schema, with `uploaded` and `selected` fields
+        uploaded = images["uploaded"]
+        for image_key, image_data in uploaded.items():
+            if "uploader" in image_data:
+                image_data = image_data.copy()
+                image_data.pop("uploader")
+                uploaded[image_key] = image_data
+    else:
+        # Legacy image schema, with image ID as keys
+        for image_key, image_data in images.items():
+            if "uploader" in image_data:
+                image_data = image_data.copy()
+                image_data.pop("uploader")
+                images[image_key] = image_data
+    return product
+
+
 def sync_product_revision(
     barcode: str, environment: Environment, flavor: Flavor
 ) -> None:
@@ -44,6 +87,7 @@ def sync_product_revision(
         # Product does not exist
         return
     else:
+        product = strip_product_from_user_ids(product)
         # Product found
         upload_revision(
             minio_client=client,
