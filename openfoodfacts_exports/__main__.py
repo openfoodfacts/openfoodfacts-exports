@@ -1,3 +1,3 @@
-from .main import app
+from openfoodfacts_exports.main import app
 
 app()

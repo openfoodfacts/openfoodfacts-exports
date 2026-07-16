@@ -105,6 +105,11 @@ def upload_all_revisions(
     # configure root logger
     get_logger()
     init_sentry()
+    typer.echo("Running upload_all_revisions...")
+    typer.echo(
+        f"only_codes: {only_codes}, upload_history: {upload_history}, "
+        f"overwrite: {overwrite}, product_type: {product_type}, root_dir: {root_dir}"
+    )
     upload_all_revisions(
         product_type=product_type,
         root_dir=root_dir,
