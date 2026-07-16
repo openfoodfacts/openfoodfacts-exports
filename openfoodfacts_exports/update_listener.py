@@ -9,11 +9,13 @@ from redis import Redis
 from redis.exceptions import ConnectionError
 
 from openfoodfacts_exports import settings
-from openfoodfacts_exports.tasks import (
+from openfoodfacts_exports.tasks.images import (
     delete_image_from_s3,
+    upload_new_image_to_s3,
+)
+from openfoodfacts_exports.tasks.revisions import (
     delete_product_from_s3,
     sync_product_revision,
-    upload_new_image_to_s3,
 )
 
 logger = logging.getLogger(__name__)
