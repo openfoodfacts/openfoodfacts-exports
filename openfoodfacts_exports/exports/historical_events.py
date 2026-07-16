@@ -71,6 +71,19 @@ class RevisionInfo(BaseModel):
         return f"{self.code}_{self.rev_id}"
 
 
+class HistoryEvent(BaseModel):
+    timestamp: int
+    id: str
+    code: str
+    rev_id: int
+    action: ChangeAction
+    field: str
+    product_type: str | None = None
+    comment: str | None = None
+    previous: Any | None = None
+    current: Any | None = None
+
+
 def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
     """Flatten a Product Opener revision diff into a list of field changes.
 
@@ -147,7 +160,7 @@ def generate_events(
     diffs: JSONType | None,
     previous_product: JSONType | None,
     current_product: JSONType | None,
-) -> list[JSONType]:
+) -> list[HistoryEvent]:
     """Generate the historical event rows for a single revision.
 
     For each changed field, the previous value is read from the previous
@@ -164,7 +177,7 @@ def generate_events(
     Returns:
         One row per changed field, ready to be serialised as JSONL.
     """
-    events: list[JSONType] = []
+    events = []
     for change in flatten_diffs(diffs):
         previous_value = (
             None
@@ -177,18 +190,18 @@ def generate_events(
             else resolve_field_value(current_product, change.field)
         )
         events.append(
-            {
-                "id": revision.id,
-                "code": revision.code,
-                "rev_id": revision.rev_id,
-                "timestamp": revision.timestamp,
-                "product_type": revision.product_type,
-                "comment": revision.comment,
-                "field": change.field,
-                "previous": previous_value,
-                "current": current_value,
-                "action": change.action,
-            }
+            HistoryEvent(
+                id=revision.id,
+                code=revision.code,
+                rev_id=revision.rev_id,
+                timestamp=revision.timestamp,
+                product_type=revision.product_type,
+                comment=revision.comment,
+                field=change.field,
+                previous=previous_value,
+                current=current_value,
+                action=change.action,
+            )
         )
     return events
 

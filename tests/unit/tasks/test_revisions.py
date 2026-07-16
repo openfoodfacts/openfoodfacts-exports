@@ -3,8 +3,65 @@ import json
 import orjson
 from openfoodfacts import APIVersion
 
+from openfoodfacts_exports.exports.historical_events import ChangeAction, HistoryEvent
 from openfoodfacts_exports.tasks import revisions
 from openfoodfacts_exports.tasks.revisions import strip_product_from_user_ids
+
+
+class FakeMinioClient:
+    def put_object(
+        self, bucket_name: str, object_name: str, data, length: int, content_type: str
+    ):
+        self.data_bytes = data.read()
+        self.bucket_name = bucket_name
+        self.object_name = object_name
+        self.content_type = content_type
+        self.length = length
+
+
+def test_upload_history_file():
+    minio_client = FakeMinioClient()
+    barcode = "5249429424921"
+    rev_id = 10
+    rev_id_2 = 11
+    events = [
+        HistoryEvent(
+            id=f"{barcode}_{rev_id}",
+            code=barcode,
+            rev_id=rev_id,
+            timestamp=1625097600,
+            product_type="food",
+            comment="Test comment",
+            field="categories_tags",
+            previous=["en:vegetables"],
+            current=["en:fruits"],
+            action=ChangeAction.CHANGE,
+        ).model_dump(mode="json"),
+        HistoryEvent(
+            id=f"{barcode}_{rev_id_2}",
+            code=barcode,
+            rev_id=rev_id_2,
+            timestamp=1625097900,
+            product_type="food",
+            comment="Add product name",
+            field="product_name",
+            previous=None,
+            current="Pop corn with salt",
+            action=ChangeAction.ADD,
+        ).model_dump(mode="json"),
+    ]
+    revisions.upload_history_file(
+        events=events, code=barcode, minio_client=minio_client
+    )
+    assert len(minio_client.data_bytes) == minio_client.length
+
+    pushed_events = [
+        orjson.loads(line) for line in minio_client.data_bytes.splitlines()
+    ]
+    assert pushed_events == events
+    assert minio_client.content_type == "application/json"
+    assert minio_client.bucket_name == "openfoodfacts-product-revisions"
+    assert minio_client.object_name == f"raw/{barcode}/history.json"
 
 
 class TestUploadRevision:
@@ -16,8 +73,8 @@ class TestUploadRevision:
         product = {"rev": 12, "name": "Test Product"}
         revisions.upload_revision(
             mock_client,
-            api_version=self._API_VERSION,
-            barcode=self._BARCODE,
+            prefix=self._API_VERSION.value,
+            code=self._BARCODE,
             product=product,
         )
         mock_client.put_object.assert_called_once()
@@ -45,8 +102,8 @@ class TestUploadRevision:
         product = {"rev": 12, "name": "Test Product"}
         revisions.upload_revision(
             mock_client,
-            api_version=self._API_VERSION,
-            barcode=self._BARCODE,
+            prefix=self._API_VERSION.value,
+            code=self._BARCODE,
             product=product,
             set_as_latest=True,
         )
