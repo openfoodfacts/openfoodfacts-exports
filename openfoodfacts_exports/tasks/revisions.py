@@ -40,10 +40,9 @@ def upload_revision_history(
         return
 
     history_events = get_history_events(code=code, minio_client=minio_client)
-    last_rev_id = None
+    seen_rev_ids = None
     if history_events:
-        # History events are sorted by timestamp, so the last one is the most recent
-        last_rev_id = history_events[-1].rev_id
+        seen_rev_ids = set(event.rev_id for event in history_events)
     else:
         # history_events is None, it means history.jsonl was not found on the server
         history_events = []
@@ -56,7 +55,7 @@ def upload_revision_history(
     previous_product: JSONType | None = None
     for revision_filepath in revision_filepaths:
         rev_id = int(revision_filepath.stem)
-        if last_rev_id is not None and rev_id <= last_rev_id:
+        if seen_rev_ids is not None and rev_id in seen_rev_ids:
             continue
         current_product = strip_product_from_user_ids(
             orjson.loads(revision_filepath.read_text())
@@ -85,6 +84,7 @@ def upload_revision_history(
         previous_product = current_product
 
     history_events += new_events
+    # Sort events by rev_id to ensure they are in chronological order
     history_events = sorted(history_events, key=lambda e: e.rev_id)
     if history_events:
         upload_history_file(
