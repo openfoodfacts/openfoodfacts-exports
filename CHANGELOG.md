@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.8.1...v0.9.0) (2026-07-16)
+
+
+### Features
+
+* add offline historical events generator ([#81](https://github.com/openfoodfacts/openfoodfacts-exports/issues/81)) ([000f52e](https://github.com/openfoodfacts/openfoodfacts-exports/commit/000f52e4cb70fdddeba209dbc42a2ebe6de0054f)), closes [#70](https://github.com/openfoodfacts/openfoodfacts-exports/issues/70)
+
+
+### Bug Fixes
+
+* add warning logs in flatten_diffs ([158f5c7](https://github.com/openfoodfacts/openfoodfacts-exports/commit/158f5c79b2bca4f40ffe8d6c909b268a61ca4c00))
+* fix typing error in test file ([b1b0bcb](https://github.com/openfoodfacts/openfoodfacts-exports/commit/b1b0bcbc482d3f1470ff057253cc8723c07c2c3c))
+* improve unit tests ([92d7b74](https://github.com/openfoodfacts/openfoodfacts-exports/commit/92d7b7473f7954c2849a1a52a1e545b4414d47d3))
+* remove user IDs from product revision ([541bbd2](https://github.com/openfoodfacts/openfoodfacts-exports/commit/541bbd22f74a0cdb6661520ac9fc36152ea16b5f))
+* use pydantic models & enum ([09132ab](https://github.com/openfoodfacts/openfoodfacts-exports/commit/09132ab38e547cbf37c85c4bb9d577c4f0e9c0be))
+* wait 2s before processing product update ([99efc6e](https://github.com/openfoodfacts/openfoodfacts-exports/commit/99efc6e1af06d12237be9745ca960ce9f69c8ee3))
+
 ## [0.8.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.8.0...v0.8.1) (2026-06-11)
 
 
