@@ -5,7 +5,7 @@ from typing import Generator, Iterable
 
 import orjson
 import tqdm
-from minio import Minio
+from minio import Minio, S3Error
 from openfoodfacts import APIVersion, Environment, Flavor
 from openfoodfacts.api import API
 from openfoodfacts.images import extract_barcode_from_path, split_barcode
@@ -45,7 +45,7 @@ def upload_revision_history(
         # History events are sorted by timestamp, so the last one is the most recent
         last_rev_id = history_events[-1].rev_id
     else:
-        # history_events is None, it means history.json was not found on the server
+        # history_events is None, it means history.jsonl was not found on the server
         history_events = []
 
     revision_filepaths = sorted(
@@ -85,6 +85,7 @@ def upload_revision_history(
         previous_product = current_product
 
     history_events += new_events
+    history_events = sorted(history_events, key=lambda e: e.rev_id)
     if history_events:
         upload_history_file(
             events=[h.model_dump() for h in history_events],
@@ -103,37 +104,39 @@ def get_history_events(code: str, minio_client: Minio) -> list[HistoryEvent] | N
         minio_client: The Minio client to use for downloading.
 
     Returns:
-        The list of events in the history.json file, or None if the history.json file
+        The list of events in the history.jsonl file, or None if the history.jsonl file
         does not exist.
     """
-    revision_path = generate_revision_path("raw", code, "history.json")
+    revision_path = generate_revision_path("json", code, "history.jsonl")
+    response = None
     try:
         response = minio_client.get_object(
             bucket_name=settings.AWS_S3_REVISION_BUCKET, object_name=revision_path
         )
-        if response.status == 404:
+        return [
+            HistoryEvent.model_validate(orjson.loads(line))
+            for line in response.data.splitlines()
+        ]
+    except S3Error as e:
+        if e.response.status == 404:
             return None
-        elif response.status == 200:
-            return [
-                HistoryEvent.model_validate(orjson.loads(line))
-                for line in response.data.splitlines()
-            ]
         else:
-            raise Exception(f"Unexpected status code: {response.status}")
+            raise
     finally:
-        response.close()
-        response.release_conn()
+        if response:
+            response.close()
+            response.release_conn()
 
 
 def upload_history_file(events: list[JSONType], code: str, minio_client: Minio) -> None:
-    """Upload the history.json file for a product to the Minio bucket.
+    """Upload the history.jsonl file for a product to the Minio bucket.
 
     Args:
         events: The list of events to upload.
         code: The barcode of the product.
         minio_client: The Minio client to use for uploading.
     """
-    revision_path = generate_revision_path("raw", code, "history.json")
+    revision_path = generate_revision_path("json", code, "history.jsonl")
     fp = io.BytesIO()
     file_length = 0
     with fp:
@@ -142,7 +145,7 @@ def upload_history_file(events: list[JSONType], code: str, minio_client: Minio) 
             fp.write(event_bytes)
             file_length += len(event_bytes)
         fp.seek(0)
-        logger.info("Uploading history.json for barcode %s at %s", code, revision_path)
+        logger.info("Uploading history.jsonl for barcode %s at %s", code, revision_path)
         minio_client.put_object(
             bucket_name=settings.AWS_S3_REVISION_BUCKET,
             object_name=revision_path,
@@ -158,7 +161,7 @@ def upload_all_revisions(
     upload_history: bool = True,
     overwrite: bool = False,
     only_codes: Iterable[str] | None = None,
-) -> Generator[HistoryEvent, None, None]:
+):
     """Upload all revisions of all products, along with their history (if
     `upload_history` is `True`).
 
@@ -173,8 +176,8 @@ def upload_all_revisions(
     fetch the existing revision file from S3 and compare it with the local files,
     skipping the revision files that were already uploaded.
 
-    If `upload_history` is `True`, we generate and upload to S3 a `history.json`
-    file that contains the full change history. We first fetch the `history.json`
+    If `upload_history` is `True`, we generate and upload to S3 a `history.jsonl`
+    file that contains the full change history. We first fetch the `history.jsonl`
     file from S3 (if it exists), optionally add missing history events, and then upload
     the updated file.
 
@@ -183,7 +186,7 @@ def upload_all_revisions(
             `beauty`,...)
         root_dir (Path): The root directory containing product directories, for example
             `/rpool/off-backups/podata-nvme/products/`
-        upload_history (bool, optional): Whether to refresh and upload the history.json
+        upload_history (bool, optional): Whether to refresh and upload the history.jsonl
             file. Defaults to True.
         overwrite (bool, optional): Whether to overwrite existing revision files on S3,
             even if they already exist. Defaults to False.
@@ -209,7 +212,11 @@ def upload_all_revisions(
             # Check that the directory contains JSON files
             and any(True for _ in product_dir.glob("*.json"))
         ):
-            code = extract_barcode_from_path(str(product_dir.relative_to(root_dir)))
+            # extract_barcode_from_path expects a file path, not a directory path
+            # so we add a fake file path to get the barcode
+            code = extract_barcode_from_path(
+                str(product_dir.relative_to(root_dir) / "f")
+            )
             if code is None:
                 continue
             upload_revisions_from_product_dir(
@@ -220,12 +227,13 @@ def upload_all_revisions(
             )
 
             if upload_history:
-                yield from upload_revision_history(
+                for _ in upload_revision_history(
                     code=code,
                     product_dir=product_dir,
                     product_type=product_type,
                     minio_client=minio_client,
-                )
+                ):
+                    pass
 
 
 def upload_revisions_from_product_dir(
