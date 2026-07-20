@@ -7,6 +7,7 @@ from openfoodfacts.utils import get_logger
 from sentry_sdk import capture_exception
 
 from openfoodfacts_exports.tasks import export_job
+from openfoodfacts_exports.tasks.historical_events import publish_historical_events_dump
 from openfoodfacts_exports.types import ExportFlavor
 from openfoodfacts_exports.workers.queues import high_queue
 
@@ -31,6 +32,11 @@ def export_datasets() -> None:
         high_queue.enqueue(export_job, flavor, job_timeout="1h", result_ttl=0)
 
 
+def export_historical_events() -> None:
+    logger.info("Enqueueing historical events dump export…")
+    high_queue.enqueue(publish_historical_events_dump, job_timeout="3h", result_ttl=0)
+
+
 # The scheduler is responsible for scheduling periodic work such as DB dump
 # generation
 def run() -> None:
@@ -39,6 +45,9 @@ def run() -> None:
     scheduler.add_executor(ThreadPoolExecutor(10))
     scheduler.add_jobstore(MemoryJobStore())
     scheduler.add_job(export_datasets, "cron", hour=16, minute=0, max_instances=1)
+    scheduler.add_job(
+        export_historical_events, "cron", hour=17, minute=0, max_instances=1
+    )
     scheduler.add_listener(exception_listener, EVENT_JOB_ERROR)
     logger.info("Starting scheduler")
     scheduler.start()

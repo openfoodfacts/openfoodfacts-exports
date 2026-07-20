@@ -1,5 +1,8 @@
+import gzip
 import io
 import logging
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Iterator
 
@@ -16,12 +19,17 @@ from openfoodfacts_exports.exports.historical_events import (
     write_events_jsonl_gz,
 )
 from openfoodfacts_exports.tasks.revisions import strip_product_from_user_ids
+from openfoodfacts_exports.utils import get_minio_client
 
 logger = logging.getLogger(__name__)
 
 # Derived event rows are stored under this prefix in the revision bucket, next to the
 # raw revision snapshots. The nightly export concatenates them into the public dump.
 HISTORICAL_EVENTS_PREFIX = "historical_events"
+
+# Public dump published to the dataset bucket, next to the other exports.
+HISTORICAL_EVENTS_DUMP_FILENAME = "openfoodfacts_historical_events.jsonl.gz"
+HISTORICAL_EVENTS_DUMP_PATH = settings.DATASET_DIR / HISTORICAL_EVENTS_DUMP_FILENAME
 
 
 def generate_events_path(api_version: APIVersion, barcode: str, rev_id: int) -> str:
@@ -191,3 +199,63 @@ def _read_json(path: Path) -> JSONType | None:
         return orjson.loads(path.read_bytes())
     except FileNotFoundError:
         return None
+
+
+def publish_historical_events_dump() -> None:
+    """Publish the public historical events dump to the dataset bucket.
+
+    The per-revision event rows stored under the ``historical_events/`` prefix in the
+    revision bucket are concatenated into a single gzipped JSONL file, which is then
+    pushed to ``s3://openfoodfacts-ds/`` next to the other exports. This is the job run
+    nightly by the scheduler.
+    """
+    minio_client = get_minio_client()
+    generate_historical_events_dump(minio_client, HISTORICAL_EVENTS_DUMP_PATH)
+
+    if settings.ENABLE_S3_PUSH:
+        logger.info("Uploading historical events dump to S3")
+        minio_client.fput_object(
+            settings.AWS_S3_DATASET_BUCKET,
+            HISTORICAL_EVENTS_DUMP_FILENAME,
+            file_path=str(HISTORICAL_EVENTS_DUMP_PATH),
+        )
+        logger.info("Historical events dump uploaded to S3")
+    else:
+        logger.info("S3 push is disabled, skipping upload of historical events dump")
+
+
+def generate_historical_events_dump(minio_client: Minio, output_path: Path) -> None:
+    """Concatenate the stored event rows into a single gzipped JSONL file.
+
+    Each stored object is already newline-terminated JSONL, so the objects are simply
+    streamed one after another into the gzipped output. The file is written to a
+    temporary location first and moved into place, so consumers never see a partial
+    dump.
+
+    Args:
+        minio_client: The Minio client.
+        output_path: The destination ``.jsonl.gz`` file.
+    """
+    objects = minio_client.list_objects(
+        settings.AWS_S3_REVISION_BUCKET,
+        prefix=f"{HISTORICAL_EVENTS_PREFIX}/",
+        recursive=True,
+    )
+    count = 0
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir) / HISTORICAL_EVENTS_DUMP_FILENAME
+        with gzip.open(tmp_path, "wb") as fp:
+            for obj in objects:
+                response = minio_client.get_object(
+                    settings.AWS_S3_REVISION_BUCKET, obj.object_name
+                )
+                try:
+                    fp.write(response.read())
+                finally:
+                    response.close()
+                    response.release_conn()
+                count += 1
+        shutil.move(tmp_path, output_path)
+    logger.info(
+        "Concatenated %d historical event object(s) into %s", count, output_path
+    )

@@ -8,9 +8,13 @@ from openfoodfacts import APIVersion
 from openfoodfacts_exports.tasks.historical_events import (
     backfill_historical_events_to_file,
     generate_events_path,
+    generate_historical_events_dump,
     iter_backfill_events,
+    publish_historical_events_dump,
     store_revision_events,
 )
+
+_MODULE = "openfoodfacts_exports.tasks.historical_events"
 
 
 def _make_product(products_dir, rel_dir, changes, snapshots):
@@ -268,3 +272,59 @@ class TestBackfillHistoricalEventsToFile:
             rows = [orjson.loads(line) for line in fp.read().splitlines()]
         assert rows == list(iter_backfill_events(products_dir))
         assert rows[0]["id"] == "2000000001_1"
+
+
+class TestGenerateHistoricalEventsDump:
+    def test_concatenates_stored_objects(self, tmp_path, mocker):
+        """Every stored event object is streamed into a single gzipped JSONL file."""
+        obj1 = mocker.MagicMock(object_name="historical_events/v2/1/1.jsonl")
+        obj2 = mocker.MagicMock(object_name="historical_events/v2/1/2.jsonl")
+        response1 = mocker.MagicMock()
+        response1.read.return_value = b'{"id": "1_1", "field": "brands"}\n'
+        response2 = mocker.MagicMock()
+        response2.read.return_value = b'{"id": "1_2", "field": "labels"}\n'
+        mock_client = mocker.MagicMock()
+        mock_client.list_objects.return_value = [obj1, obj2]
+        mock_client.get_object.side_effect = [response1, response2]
+        output_path = tmp_path / "openfoodfacts_historical_events.jsonl.gz"
+
+        generate_historical_events_dump(mock_client, output_path)
+
+        with gzip.open(output_path, "rb") as fp:
+            rows = [orjson.loads(line) for line in fp.read().splitlines()]
+        assert rows == [
+            {"id": "1_1", "field": "brands"},
+            {"id": "1_2", "field": "labels"},
+        ]
+        list_call = mock_client.list_objects.call_args
+        assert list_call.args[0] == "openfoodfacts-product-revisions"
+        assert list_call.kwargs["prefix"] == "historical_events/"
+        response1.close.assert_called_once()
+        response1.release_conn.assert_called_once()
+
+
+class TestPublishHistoricalEventsDump:
+    def test_uploads_dump_when_s3_enabled(self, mocker):
+        """When S3 push is enabled, the dump is uploaded to the dataset bucket."""
+        mock_client = mocker.MagicMock()
+        mocker.patch(f"{_MODULE}.get_minio_client", return_value=mock_client)
+        mocker.patch(f"{_MODULE}.generate_historical_events_dump")
+        mocker.patch(f"{_MODULE}.settings.ENABLE_S3_PUSH", 1)
+
+        publish_historical_events_dump()
+
+        mock_client.fput_object.assert_called_once()
+        args = mock_client.fput_object.call_args
+        assert args.args[0] == "openfoodfacts-ds"
+        assert args.args[1] == "openfoodfacts_historical_events.jsonl.gz"
+
+    def test_skips_upload_when_s3_disabled(self, mocker):
+        """When S3 push is disabled, nothing is uploaded."""
+        mock_client = mocker.MagicMock()
+        mocker.patch(f"{_MODULE}.get_minio_client", return_value=mock_client)
+        mocker.patch(f"{_MODULE}.generate_historical_events_dump")
+        mocker.patch(f"{_MODULE}.settings.ENABLE_S3_PUSH", 0)
+
+        publish_historical_events_dump()
+
+        mock_client.fput_object.assert_not_called()

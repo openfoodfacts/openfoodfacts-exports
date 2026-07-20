@@ -79,3 +79,19 @@ def backfill_historical_events(products_dir: Path, output_path: Path) -> None:
     get_logger()
     init_sentry()
     backfill_historical_events_to_file(products_dir, output_path)
+
+
+@app.command()
+def publish_historical_events() -> None:
+    """Concatenate stored historical events into the public dump and push it to S3."""
+    from openfoodfacts.utils import get_logger
+
+    from openfoodfacts_exports.tasks.historical_events import (
+        publish_historical_events_dump,
+    )
+    from openfoodfacts_exports.utils import init_sentry
+
+    # configure root logger
+    get_logger()
+    init_sentry()
+    publish_historical_events_dump()
