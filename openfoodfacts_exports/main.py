@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import typer
 
 from openfoodfacts_exports.types import ExportFlavor
@@ -61,3 +63,19 @@ def launch_export(flavor: ExportFlavor) -> None:
     get_logger()
     init_sentry()
     export_job(flavor)
+
+
+@app.command()
+def backfill_historical_events(products_dir: Path, output_path: Path) -> None:
+    """Generate the historical events dump from a bundled products/ directory."""
+    from openfoodfacts.utils import get_logger
+
+    from openfoodfacts_exports.tasks.historical_events import (
+        backfill_historical_events_to_file,
+    )
+    from openfoodfacts_exports.utils import init_sentry
+
+    # configure root logger
+    get_logger()
+    init_sentry()
+    backfill_historical_events_to_file(products_dir, output_path)
