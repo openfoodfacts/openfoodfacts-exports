@@ -2,21 +2,24 @@ import logging
 import time
 
 import backoff
-from openfoodfacts import Environment, Flavor
+from openfoodfacts import APIVersion, Environment, Flavor
 from openfoodfacts.redis import ProductUpdateEvent
 from openfoodfacts.redis import UpdateListener as BaseUpdateListener
 from redis import Redis
 from redis.exceptions import ConnectionError
 
 from openfoodfacts_exports import settings
+from openfoodfacts_exports.tasks.historical_events import store_revision_events
 from openfoodfacts_exports.tasks.images import (
     delete_image_from_s3,
     upload_new_image_to_s3,
 )
 from openfoodfacts_exports.tasks.revisions import (
     delete_product_from_s3,
+    get_revision,
     sync_product_revision,
 )
+from openfoodfacts_exports.utils import get_minio_client
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +73,29 @@ class UpdateListener(BaseUpdateListener):
             flavor,
             environment,
         )
-        sync_product_revision(
+        minio_client = get_minio_client()
+        # Read the previous revision (latest.json) before sync_product_revision
+        # overwrites it, so we can compute the field-level diff against it.
+        previous_product = get_revision(
+            minio_client, APIVersion.v2, event.code, "latest"
+        )
+        current_product = sync_product_revision(
             barcode=event.code, environment=environment, flavor=flavor
         )
+        if current_product is not None:
+            # A diff failure must never break the revision capture above.
+            try:
+                store_revision_events(
+                    minio_client,
+                    APIVersion.v2,
+                    event,
+                    previous_product,
+                    current_product,
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to store historical events for product %s", event.code
+                )
 
     def process_image_upload(
         self, event: ProductUpdateEvent, environment: Environment, flavor: Flavor

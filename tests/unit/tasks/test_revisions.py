@@ -1,10 +1,53 @@
 import json
 
 import orjson
+from minio.error import S3Error
 from openfoodfacts import APIVersion
 
 from openfoodfacts_exports.tasks import revisions
 from openfoodfacts_exports.tasks.revisions import strip_product_from_user_ids
+
+
+class TestGetRevision:
+    _BARCODE = "3270160396337"
+    _API_VERSION = APIVersion.v2
+
+    def test_returns_parsed_revision(self, mocker):
+        product = {"rev": 12, "code": self._BARCODE}
+        mock_response = mocker.MagicMock()
+        mock_response.read.return_value = orjson.dumps(product)
+        mock_client = mocker.MagicMock()
+        mock_client.get_object.return_value = mock_response
+
+        result = revisions.get_revision(
+            mock_client, self._API_VERSION, self._BARCODE, "latest"
+        )
+
+        assert result == product
+        assert (
+            mock_client.get_object.call_args.kwargs["object_name"]
+            == f"v2/{self._BARCODE}/latest.json"
+        )
+        # The response is always released, even on the happy path.
+        mock_response.close.assert_called_once()
+        mock_response.release_conn.assert_called_once()
+
+    def test_returns_none_when_missing(self, mocker):
+        mock_client = mocker.MagicMock()
+        mock_client.get_object.side_effect = S3Error(
+            "NoSuchKey",
+            "The specified key does not exist.",
+            f"v2/{self._BARCODE}/11.json",
+            "request-id",
+            "host-id",
+            mocker.MagicMock(),
+        )
+
+        result = revisions.get_revision(
+            mock_client, self._API_VERSION, self._BARCODE, 11
+        )
+
+        assert result is None
 
 
 class TestUploadRevision:
