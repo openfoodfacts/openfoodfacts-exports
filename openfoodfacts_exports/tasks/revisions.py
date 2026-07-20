@@ -4,6 +4,7 @@ from pathlib import Path
 
 import orjson
 from minio import Minio
+from minio.error import S3Error
 from openfoodfacts import APIVersion, Environment, Flavor
 from openfoodfacts.api import API
 from openfoodfacts.types import JSONType
@@ -59,7 +60,7 @@ def strip_product_from_user_ids(product: JSONType) -> JSONType:
 
 def sync_product_revision(
     barcode: str, environment: Environment, flavor: Flavor
-) -> None:
+) -> JSONType | None:
     """Synchronize a product revision to S3.
 
     This function retrieves the product data from the Open Food Facts API and uploads it
@@ -69,6 +70,10 @@ def sync_product_revision(
         barcode: The barcode of the product.
         environment: The environment to use.
         flavor: The flavor to use.
+
+    Returns:
+        The uploaded product revision (stripped of user IDs), or ``None`` if the product
+        could not be fetched or does not exist.
     """
     api_version = APIVersion.v2
     api = API(
@@ -82,10 +87,10 @@ def sync_product_revision(
         product = api.product.get(code=barcode)
     except Exception as e:
         logger.error("Failed to sync product revision for barcode %s: %s", barcode, e)
-        return
+        return None
     if product is None:
         # Product does not exist
-        return
+        return None
     else:
         product = strip_product_from_user_ids(product)
         # Product found
@@ -96,6 +101,7 @@ def sync_product_revision(
             product=product,
             set_as_latest=True,
         )
+        return product
 
 
 def delete_product_from_s3(barcode: str) -> None:
@@ -189,3 +195,37 @@ def generate_revision_path(
         The revision path.
     """
     return f"{api_version.value}/{barcode}/{rev_id}.json"
+
+
+def get_revision(
+    minio_client: Minio,
+    api_version: APIVersion,
+    barcode: str,
+    rev_id: int | str,
+) -> JSONType | None:
+    """Retrieve a product revision from S3.
+
+    Args:
+        minio_client: The Minio client.
+        api_version: The API version used when the revision was stored.
+        barcode: The barcode of the product.
+        rev_id: The revision ID, or ``"latest"`` for the latest revision.
+
+    Returns:
+        The product revision, or ``None`` if it does not exist on S3.
+    """
+    object_name = generate_revision_path(api_version, barcode, rev_id)
+    try:
+        response = minio_client.get_object(
+            bucket_name=settings.AWS_S3_REVISION_BUCKET,
+            object_name=object_name,
+        )
+    except S3Error as e:
+        if e.code == "NoSuchKey":
+            return None
+        raise
+    try:
+        return orjson.loads(response.read())
+    finally:
+        response.close()
+        response.release_conn()
