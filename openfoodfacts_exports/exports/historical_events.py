@@ -50,6 +50,7 @@ class FieldChange(BaseModel):
 
     field: str
     action: ChangeAction
+    category: str
 
 
 class RevisionInfo(BaseModel):
@@ -123,7 +124,9 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
                 key = (field, action)
                 if key not in seen:
                     seen.add(key)
-                    changes.append(FieldChange(field=field, action=action))
+                    changes.append(
+                        FieldChange(field=field, action=action, category=category_value)
+                    )
     return changes
 
 
@@ -179,16 +182,23 @@ def generate_events(
     """
     events = []
     for change in flatten_diffs(diffs):
-        previous_value = (
-            None
-            if change.action == ChangeAction.ADD
-            else resolve_field_value(previous_product, change.field)
-        )
-        current_value = (
-            None
-            if change.action == ChangeAction.DELETE
-            else resolve_field_value(current_product, change.field)
-        )
+        if change.category in ("uploaded_images", "selected_images"):
+            field = change.category
+            previous_value = None
+            # current_value contains the ID of the uploaded image
+            current_value = resolve_field_value(current_product, change.field)
+        else:
+            field = change.field
+            previous_value = (
+                None
+                if change.action == ChangeAction.ADD
+                else resolve_field_value(previous_product, change.field)
+            )
+            current_value = (
+                None
+                if change.action == ChangeAction.DELETE
+                else resolve_field_value(current_product, change.field)
+            )
         events.append(
             HistoryEvent(
                 id=revision.id,
@@ -197,7 +207,7 @@ def generate_events(
                 timestamp=revision.timestamp,
                 product_type=revision.product_type,
                 comment=revision.comment,
-                field=change.field,
+                field=field,
                 previous=previous_value,
                 current=current_value,
                 action=change.action,
