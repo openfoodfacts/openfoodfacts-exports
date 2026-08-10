@@ -44,12 +44,12 @@ def upload_revision_history(
     if history_events:
         seen_rev_ids = set(event.rev_id for event in history_events)
     else:
-        # history_events is None, it means history.jsonl was not found on the server
+        # history_events is None, it means history.jsonl was not found on S3
         history_events = []
 
     revision_filepaths = sorted(
         (p for p in product_dir.glob("*.json") if p.stem.isdigit()),
-        reverse=True,
+        key=lambda p: int(p.stem),
     )
     new_events: list[HistoryEvent] = []
     previous_product: JSONType | None = None
@@ -252,6 +252,7 @@ def upload_revisions_from_product_dir(
     revision_filepaths = sorted(
         (p for p in product_dir.glob("*.json") if p.stem.isdigit()),
         reverse=True,
+        key=lambda p: int(p.stem),
     )
     if not overwrite:
         existing_revisions = get_existing_s3_revisions(code, minio_client)
@@ -280,7 +281,7 @@ def upload_revisions_from_product_dir(
             prefix="json",
             code=code,
             product=product,
-            set_as_latest=(i == len(revision_filepaths) - 1),
+            set_as_latest=(i == 0),
         )
 
 
