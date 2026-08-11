@@ -110,7 +110,7 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
 
     changes: list[FieldChange] = []
     seen: set[tuple[str, str]] = set()
-    for category_value in diffs.values():
+    for category, category_value in diffs.items():
         if not isinstance(category_value, dict):
             continue
         for action, fields in category_value.items():
@@ -125,7 +125,7 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
                 if key not in seen:
                     seen.add(key)
                     changes.append(
-                        FieldChange(field=field, action=action, category=category_value)
+                        FieldChange(field=field, action=action, category=category)
                     )
     return changes
 
