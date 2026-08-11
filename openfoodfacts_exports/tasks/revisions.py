@@ -1,16 +1,22 @@
 import glob
+import gzip
 import io
 import logging
+import typing
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Generator, Iterable
 
 import orjson
 import tqdm
 from minio import Minio, S3Error
-from openfoodfacts import APIVersion, Environment, Flavor
+from openfoodfacts import APIVersion, Environment, Flavor, normalize_barcode
 from openfoodfacts.api import API
-from openfoodfacts.images import extract_barcode_from_path, split_barcode
+from openfoodfacts.images import (
+    extract_barcode_from_path,
+    split_barcode,
+)
 from openfoodfacts.types import JSONType
+from pydantic import BaseModel
 
 from openfoodfacts_exports import settings
 from openfoodfacts_exports.exports.historical_events import (
@@ -34,7 +40,9 @@ def upload_revision_history(
         logger.info("Skipping revision history for %s: changes.json not found", code)
         return []
     changes = orjson.loads(changes.read_text())
-    changes_by_rev_id = {change["rev"]: change for change in changes}
+    changes_by_rev_id = {
+        change.get("rev", i + 1): change for i, change in enumerate(changes)
+    }
 
     if not changes:
         logger.warning("changes.json is empty for %s", code)
@@ -159,13 +167,13 @@ def upload_history_file(events: list[JSONType], code: str, minio_client: Minio) 
         )
 
 
-def upload_all_revisions(
+def upload_all_revisions_from_dir(
     product_type: str,
     root_dir: Path,
     upload_history: bool = True,
     overwrite: bool = False,
     only_codes: Iterable[str] | None = None,
-):
+) -> None:
     """Upload all revisions of all products, along with their history (if
     `upload_history` is `True`).
 
@@ -198,8 +206,6 @@ def upload_all_revisions(
             revisions for. If `None`, we iterate over all directory to find product
             directory, otherwise we generate product directory paths from the codes.
             Defaults to `None`.
-    Yields:
-        HistoryEvent: The new history events that were uploaded, if any.
     """
     logger.info("Uploading all revisions from %s...", root_dir)
     minio_client = get_minio_client()
@@ -240,21 +246,33 @@ def upload_all_revisions(
             )
             if code is None:
                 continue
-            uploaded_revisions += upload_revisions_from_product_dir(
-                code=code,
-                product_dir=product_dir,
-                minio_client=minio_client,
-                overwrite=overwrite,
-            )
-
-            if upload_history:
-                history_events = upload_revision_history(
+            try:
+                uploaded_revisions += upload_revisions_from_product_dir(
                     code=code,
                     product_dir=product_dir,
-                    product_type=product_type,
                     minio_client=minio_client,
+                    overwrite=overwrite,
                 )
-                uploaded_history += bool(history_events)
+            except Exception:
+                logger.exception(
+                    "Exception caught while uploading revisions for product %s", code
+                )
+                continue
+
+            if upload_history:
+                try:
+                    history_events = upload_revision_history(
+                        code=code,
+                        product_dir=product_dir,
+                        product_type=product_type,
+                        minio_client=minio_client,
+                    )
+                    uploaded_history += bool(history_events)
+                except Exception:
+                    logger.exception(
+                        "Exception caught while uploading history for product %s",
+                        code,
+                    )
 
             pbar.set_postfix(
                 {
@@ -262,6 +280,138 @@ def upload_all_revisions(
                     "uploaded_history": uploaded_history,
                 }
             )
+
+
+class RecentChange(BaseModel):
+    comment: str
+    diffs: dict[str, Any]
+    userid: str | None
+    rev: int
+    code: str
+    t: int
+
+
+def recent_changes_iter(file_path: Path) -> Generator[RecentChange, None, None]:
+    with gzip.open(file_path, "rt") as f:
+        for line in f:
+            yield RecentChange.model_validate_json(line)
+
+
+def upload_all_revisions_from_recent_changes(
+    product_type: str,
+    root_dir: Path,
+    recent_change_file: Path,
+    min_timestamp: int | None = None,
+    upload_history: bool = True,
+    overwrite: bool = False,
+    only_codes: Iterable[str] | None = None,
+):
+    """Upload all revisions of all products, along with their history (if
+    `upload_history` is `True`), from a recent_changes JSONL file.
+
+    This function iterates over recent changes JSONL file
+    (https://static.openfoodfacts.org/data/openfoodfacts_recent_changes.jsonl.gz),
+    and for each recent change, it synchronizes all revisions with AWS S3, and
+    upload a new history file if needed.
+
+    If `only_codes` is not `None`, only products with codes in `only_codes` will be
+    synchronized.
+
+    If `overwrite` is False, we first fetch the existing revision file from S3 and
+    compare it with the local files, skipping the revision files that were already
+    uploaded.
+
+    If `upload_history` is `True`, we generate and upload to S3 a `history.jsonl`
+    file that contains the full change history. We first fetch the `history.jsonl`
+    file from S3 (if it exists), optionally add missing history events, and then upload
+    the updated file.
+
+    Args:
+        product_type (str): The type of product to upload revisions for (ex: `food`,
+            `beauty`,...)
+        root_dir (Path): The root directory containing product directories, for example
+            `/rpool/off-backups/podata-nvme/products/`
+        recent_change_file (Path): The path to the recent change file (JSONL).
+        min_timestamp (int, optional): if provided, only changes with a timestamp greater
+            or equal than this will be considered.
+        upload_history (bool, optional): Whether to refresh and upload the history.jsonl
+            file. Defaults to True.
+        overwrite (bool, optional): Whether to overwrite existing revision files on S3,
+            even if they already exist. Defaults to False.
+        only_codes (Iterable[str] | None, optional): A list of product codes to upload
+            revisions for. If `None`, we iterate over all directory to find product
+            directory, otherwise we generate product directory paths from the codes.
+            Defaults to `None`.
+    """
+    logger.info("Uploading all revisions from %s...", root_dir)
+    minio_client = get_minio_client()
+
+    uploaded_revisions = 0
+    uploaded_history = 0
+    pbar = tqdm.tqdm(recent_changes_iter(recent_change_file), desc="recent changes")
+    for recent_change in pbar:
+        recent_change = typing.cast(RecentChange, recent_change)
+        code = normalize_barcode(recent_change.code)
+        product_dir = root_dir / "/".join(split_barcode(code))
+
+        if not product_dir.is_dir():
+            logger.info("Product dir %s not found", product_dir)
+            continue
+
+        timestamp = recent_change.t
+        if min_timestamp and timestamp < min_timestamp:
+            logger.debug(
+                "Timestamp of recent change is lower than min_timestamp (%s < %s), "
+                "skipping",
+                recent_change.t,
+                min_timestamp,
+            )
+            continue
+
+        if only_codes and recent_change.code not in only_codes:
+            continue
+
+        if (
+            # Check that the directory contains JSON files
+            any(True for _ in product_dir.glob("*.json"))
+        ):
+            try:
+                uploaded_revisions += upload_revisions_from_product_dir(
+                    code=code,
+                    product_dir=product_dir,
+                    minio_client=minio_client,
+                    overwrite=overwrite,
+                )
+            except Exception:
+                logger.exception(
+                    "Exception caught while uploading revisions for product %s", code
+                )
+                continue
+
+            if upload_history:
+                try:
+                    history_events = upload_revision_history(
+                        code=code,
+                        product_dir=product_dir,
+                        product_type=product_type,
+                        minio_client=minio_client,
+                    )
+                    uploaded_history += bool(history_events)
+                except Exception:
+                    logger.exception(
+                        "Exception caught while uploading history for product %s",
+                        code,
+                    )
+
+            pbar.set_postfix(
+                {
+                    "uploaded_revisions": uploaded_revisions,
+                    "uploaded_history": uploaded_history,
+                    "timestamp": str(timestamp),
+                }
+            )
+        else:
+            logger.warning("Product dir %s contains no JSON files", product_dir)
 
 
 def upload_revisions_from_product_dir(

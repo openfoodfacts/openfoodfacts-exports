@@ -83,6 +83,22 @@ def upload_all_revisions(
             "`/rpool/off-backups/podata-nvme/products/`)",
         ),
     ],
+    recent_changes_file: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Recent changes JSONL dump. If provided, we use this file to know the "
+            "barcodes of the products we upload revision/history for.",
+        ),
+    ] = None,
+    min_timestamp: Annotated[
+        int | None,
+        typer.Option(
+            help="Only consider recent changes with timestamp greater or equal that "
+            "this. This option is ignored if --recent-changes-file is not provided."
+        ),
+    ] = None,
     upload_history: Annotated[
         bool,
         typer.Option(help="Generate and upload the history.json file for each product"),
@@ -99,7 +115,10 @@ def upload_all_revisions(
     """Upload all revisions of all products of a given type from a given directory."""
     from openfoodfacts.utils import get_logger
 
-    from openfoodfacts_exports.tasks.revisions import upload_all_revisions
+    from openfoodfacts_exports.tasks.revisions import (
+        upload_all_revisions_from_dir,
+        upload_all_revisions_from_recent_changes,
+    )
     from openfoodfacts_exports.utils import init_sentry
 
     # configure root logger
@@ -110,10 +129,22 @@ def upload_all_revisions(
         f"only_codes: {only_codes}, upload_history: {upload_history}, "
         f"overwrite: {overwrite}, product_type: {product_type}, root_dir: {root_dir}"
     )
-    upload_all_revisions(
-        product_type=product_type,
-        root_dir=root_dir,
-        upload_history=upload_history,
-        overwrite=overwrite,
-        only_codes=only_codes,
-    )
+
+    if recent_changes_file:
+        upload_all_revisions_from_recent_changes(
+            product_type=product_type,
+            recent_change_file=recent_changes_file,
+            min_timestamp=min_timestamp,
+            root_dir=root_dir,
+            upload_history=upload_history,
+            overwrite=overwrite,
+            only_codes=only_codes,
+        )
+    else:
+        upload_all_revisions_from_dir(
+            product_type=product_type,
+            root_dir=root_dir,
+            upload_history=upload_history,
+            overwrite=overwrite,
+            only_codes=only_codes,
+        )
