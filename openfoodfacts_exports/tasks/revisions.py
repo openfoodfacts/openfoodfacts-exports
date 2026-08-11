@@ -1,7 +1,8 @@
+import glob
 import io
 import logging
 from pathlib import Path
-from typing import Generator, Iterable
+from typing import Iterable
 
 import orjson
 import tqdm
@@ -27,17 +28,17 @@ def upload_revision_history(
     product_dir: Path,
     product_type: str,
     minio_client: Minio,
-) -> Generator[HistoryEvent, None, None]:
+) -> list[HistoryEvent]:
     changes = product_dir / "changes.json"
     if not changes.exists():
         logger.info("Skipping revision history for %s: changes.json not found", code)
-        return
+        return []
     changes = orjson.loads(changes.read_text())
     changes_by_rev_id = {change["rev"]: change for change in changes}
 
     if not changes:
         logger.warning("changes.json is empty for %s", code)
-        return
+        return []
 
     history_events = get_history_events(code=code, minio_client=minio_client)
     seen_rev_ids = None
@@ -68,7 +69,7 @@ def upload_revision_history(
 
         diffs = change.get("diffs", [])
         if not diffs:
-            logger.warning("No diffs found for revision %s", rev_id)
+            logger.debug("No diffs found for revision %s", rev_id)
             previous_product = current_product
             continue
         rev_info = RevisionInfo(
@@ -83,17 +84,18 @@ def upload_revision_history(
         )
         previous_product = current_product
 
-    history_events += new_events
-    # Sort events by rev_id to ensure they are in chronological order
-    history_events = sorted(history_events, key=lambda e: e.rev_id)
-    if history_events:
-        upload_history_file(
-            events=[h.model_dump() for h in history_events],
-            code=code,
-            minio_client=minio_client,
-        )
-
-    yield from new_events
+    if new_events:
+        history_events += new_events
+        # Sort events by rev_id to ensure they are in chronological order
+        history_events = sorted(history_events, key=lambda e: e.rev_id)
+        if history_events:
+            upload_history_file(
+                events=[h.model_dump() for h in history_events],
+                code=code,
+                minio_client=minio_client,
+            )
+        return history_events
+    return []
 
 
 def get_history_events(code: str, minio_client: Minio) -> list[HistoryEvent] | None:
@@ -145,7 +147,9 @@ def upload_history_file(events: list[JSONType], code: str, minio_client: Minio) 
             fp.write(event_bytes)
             file_length += len(event_bytes)
         fp.seek(0)
-        logger.info("Uploading history.jsonl for barcode %s at %s", code, revision_path)
+        logger.debug(
+            "Uploading history.jsonl for barcode %s at %s", code, revision_path
+        )
         minio_client.put_object(
             bucket_name=settings.AWS_S3_REVISION_BUCKET,
             object_name=revision_path,
@@ -200,11 +204,28 @@ def upload_all_revisions(
     logger.info("Uploading all revisions from %s...", root_dir)
     minio_client = get_minio_client()
     if only_codes:
-        dir_iterator = (root_dir / "/".join(split_barcode(code)) for code in only_codes)
+        dir_iterator = ("/".join(split_barcode(code)) for code in only_codes)
     else:
-        dir_iterator = root_dir.glob("**/*")
+        dir_iterator = glob.iglob("**/*", root_dir=root_dir, recursive=True)
 
-    for product_dir in tqdm.tqdm(dir_iterator, desc="product directory"):
+    uploaded_revisions = 0
+    uploaded_history = 0
+    pbar = tqdm.tqdm(dir_iterator, desc="product directory")
+    for relative_dir in pbar:
+        product_dir = root_dir / relative_dir
+        # We perform quick checks that don't need disk access to discard paths
+        # that do not contain product revision files.
+        # First directory in hierarchy is necessary a digit if it's a product dir
+        if "/" in relative_dir and not relative_dir.split("/")[0].isdigit():
+            continue
+        digit_parts = [x for x in relative_dir.split("/") if x.isdigit()]
+        if not digit_parts:
+            continue
+        # Product directory for barcode > 8 are in the format 324/425/085/5343,
+        # so if we have a directory with only 2 or 3 digit parts, we're not deep
+        # enough
+        if 2 <= len(digit_parts) <= 3:
+            continue
         if (
             product_dir.is_dir()
             # Check that the directory name is a barcode (all digits)
@@ -219,7 +240,7 @@ def upload_all_revisions(
             )
             if code is None:
                 continue
-            upload_revisions_from_product_dir(
+            uploaded_revisions += upload_revisions_from_product_dir(
                 code=code,
                 product_dir=product_dir,
                 minio_client=minio_client,
@@ -227,18 +248,25 @@ def upload_all_revisions(
             )
 
             if upload_history:
-                for _ in upload_revision_history(
+                history_events = upload_revision_history(
                     code=code,
                     product_dir=product_dir,
                     product_type=product_type,
                     minio_client=minio_client,
-                ):
-                    pass
+                )
+                uploaded_history += bool(history_events)
+
+            pbar.set_postfix(
+                {
+                    "uploaded_revisions": uploaded_revisions,
+                    "uploaded_history": uploaded_history,
+                }
+            )
 
 
 def upload_revisions_from_product_dir(
     code: str, product_dir: Path, minio_client: Minio, overwrite: bool = False
-) -> None:
+) -> int:
     """Upload all revision of a product stored as JSON files in a directory.
 
     Args:
@@ -247,6 +275,8 @@ def upload_revisions_from_product_dir(
         minio_client: The Minio client to use for uploading.
         overwrite: Whether to overwrite existing files on S3. If false, existing files
             will be skipped.
+    Returns:
+        The number of revisions uploaded.
     """
     # Revision IDs in reverse order (from highest=latest to lowest)
     revision_filepaths = sorted(
@@ -259,10 +289,11 @@ def upload_revisions_from_product_dir(
     else:
         existing_revisions = set()
 
+    uploaded = 0
     for i, revision_filepath in enumerate(revision_filepaths):
         rev_id = int(revision_filepath.stem)
         if rev_id in existing_revisions:
-            logger.info(
+            logger.debug(
                 "Skipping revision %d for barcode %s (already exists)",
                 rev_id,
                 code,
@@ -270,7 +301,7 @@ def upload_revisions_from_product_dir(
             continue
         product = orjson.loads(revision_filepath.read_text())
         product = strip_product_from_user_ids(product)
-        logger.info(
+        logger.debug(
             "Uploading revision %d/%d for barcode %s",
             i + 1,
             len(revision_filepaths),
@@ -283,6 +314,8 @@ def upload_revisions_from_product_dir(
             product=product,
             set_as_latest=(i == 0),
         )
+        uploaded += 1
+    return uploaded
 
 
 def get_existing_s3_revisions(code: str, minio_client: Minio) -> set[int]:
@@ -404,7 +437,9 @@ def remove_latest_revision(minio_client: Minio, prefix: str, barcode: str):
         barcode: The barcode of the product.
     """
     revision_path = generate_revision_path(prefix, barcode, "latest.json")
-    logger.info("Removing latest revision for barcode %s at %s", barcode, revision_path)
+    logger.debug(
+        "Removing latest revision for barcode %s at %s", barcode, revision_path
+    )
     minio_client.remove_object(
         bucket_name=settings.AWS_S3_REVISION_BUCKET,
         object_name=revision_path,
@@ -433,7 +468,7 @@ def upload_revision(
     product_bytes = orjson.dumps(product)
     fp = io.BytesIO(product_bytes)
     fp.seek(0)
-    logger.info("Uploading revision %s for barcode %s at %s", rev, code, revision_path)
+    logger.debug("Uploading revision %s for barcode %s at %s", rev, code, revision_path)
     minio_client.put_object(
         bucket_name=settings.AWS_S3_REVISION_BUCKET,
         object_name=revision_path,
@@ -442,7 +477,7 @@ def upload_revision(
         content_type="application/json",
     )
     if set_as_latest:
-        logger.info(
+        logger.debug(
             "Setting revision %s as latest for barcode %s at %s",
             rev,
             code,
