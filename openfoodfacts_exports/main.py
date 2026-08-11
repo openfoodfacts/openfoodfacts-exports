@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Annotated
+
 import typer
 
 from openfoodfacts_exports.types import ExportFlavor
@@ -61,3 +64,87 @@ def launch_export(flavor: ExportFlavor) -> None:
     get_logger()
     init_sentry()
     export_job(flavor)
+
+
+@app.command()
+def upload_all_revisions(
+    product_type: Annotated[
+        str,
+        typer.Argument(
+            help="Type of product to upload revisions for (e.g. 'food', 'beauty',...)"
+        ),
+    ],
+    root_dir: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            help="Directory containing the product data to upload (ex: "
+            "`/rpool/off-backups/podata-nvme/products/`)",
+        ),
+    ],
+    recent_changes_file: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Recent changes JSONL dump. If provided, we use this file to know the "
+            "barcodes of the products we upload revision/history for.",
+        ),
+    ] = None,
+    min_timestamp: Annotated[
+        int | None,
+        typer.Option(
+            help="Only consider recent changes with timestamp greater or equal that "
+            "this. This option is ignored if --recent-changes-file is not provided."
+        ),
+    ] = None,
+    upload_history: Annotated[
+        bool,
+        typer.Option(help="Generate and upload the history.json file for each product"),
+    ] = True,
+    overwrite: Annotated[
+        bool,
+        typer.Option(help="Overwrite existing revisions"),
+    ] = False,
+    only_codes: Annotated[
+        list[str] | None,
+        typer.Option(help="Only upload revisions for a list of barcodes"),
+    ] = None,
+) -> None:
+    """Upload all revisions of all products of a given type from a given directory."""
+    from openfoodfacts.utils import get_logger
+
+    from openfoodfacts_exports.tasks.revisions import (
+        upload_all_revisions_from_dir,
+        upload_all_revisions_from_recent_changes,
+    )
+    from openfoodfacts_exports.utils import init_sentry
+
+    # configure root logger
+    get_logger()
+    init_sentry()
+    typer.echo("Running upload_all_revisions...")
+    typer.echo(
+        f"only_codes: {only_codes}, upload_history: {upload_history}, "
+        f"overwrite: {overwrite}, product_type: {product_type}, root_dir: {root_dir}"
+    )
+
+    if recent_changes_file:
+        upload_all_revisions_from_recent_changes(
+            product_type=product_type,
+            recent_change_file=recent_changes_file,
+            min_timestamp=min_timestamp,
+            root_dir=root_dir,
+            upload_history=upload_history,
+            overwrite=overwrite,
+            only_codes=only_codes,
+        )
+    else:
+        upload_all_revisions_from_dir(
+            product_type=product_type,
+            root_dir=root_dir,
+            upload_history=upload_history,
+            overwrite=overwrite,
+            only_codes=only_codes,
+        )

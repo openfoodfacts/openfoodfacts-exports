@@ -50,6 +50,7 @@ class FieldChange(BaseModel):
 
     field: str
     action: ChangeAction
+    category: str
 
 
 class RevisionInfo(BaseModel):
@@ -69,6 +70,19 @@ class RevisionInfo(BaseModel):
     def id(self) -> str:
         """Globally unique revision key, in the form ``{code}_{rev_id}``."""
         return f"{self.code}_{self.rev_id}"
+
+
+class HistoryEvent(BaseModel):
+    timestamp: int
+    id: str
+    code: str
+    rev_id: int
+    action: ChangeAction
+    field: str
+    product_type: str | None = None
+    comment: str | None = None
+    previous: Any | None = None
+    current: Any | None = None
 
 
 def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
@@ -96,7 +110,7 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
 
     changes: list[FieldChange] = []
     seen: set[tuple[str, str]] = set()
-    for category_value in diffs.values():
+    for category, category_value in diffs.items():
         if not isinstance(category_value, dict):
             continue
         for action, fields in category_value.items():
@@ -110,7 +124,9 @@ def flatten_diffs(diffs: JSONType | None) -> list[FieldChange]:
                 key = (field, action)
                 if key not in seen:
                     seen.add(key)
-                    changes.append(FieldChange(field=field, action=action))
+                    changes.append(
+                        FieldChange(field=field, action=action, category=category)
+                    )
     return changes
 
 
@@ -147,7 +163,7 @@ def generate_events(
     diffs: JSONType | None,
     previous_product: JSONType | None,
     current_product: JSONType | None,
-) -> list[JSONType]:
+) -> list[HistoryEvent]:
     """Generate the historical event rows for a single revision.
 
     For each changed field, the previous value is read from the previous
@@ -164,31 +180,38 @@ def generate_events(
     Returns:
         One row per changed field, ready to be serialised as JSONL.
     """
-    events: list[JSONType] = []
+    events = []
     for change in flatten_diffs(diffs):
-        previous_value = (
-            None
-            if change.action == ChangeAction.ADD
-            else resolve_field_value(previous_product, change.field)
-        )
-        current_value = (
-            None
-            if change.action == ChangeAction.DELETE
-            else resolve_field_value(current_product, change.field)
-        )
+        if change.category in ("uploaded_images", "selected_images"):
+            field = change.category
+            previous_value = None
+            # current_value contains the ID of the uploaded image
+            current_value = resolve_field_value(current_product, change.field)
+        else:
+            field = change.field
+            previous_value = (
+                None
+                if change.action == ChangeAction.ADD
+                else resolve_field_value(previous_product, change.field)
+            )
+            current_value = (
+                None
+                if change.action == ChangeAction.DELETE
+                else resolve_field_value(current_product, change.field)
+            )
         events.append(
-            {
-                "id": revision.id,
-                "code": revision.code,
-                "rev_id": revision.rev_id,
-                "timestamp": revision.timestamp,
-                "product_type": revision.product_type,
-                "comment": revision.comment,
-                "field": change.field,
-                "previous": previous_value,
-                "current": current_value,
-                "action": change.action,
-            }
+            HistoryEvent(
+                id=revision.id,
+                code=revision.code,
+                rev_id=revision.rev_id,
+                timestamp=revision.timestamp,
+                product_type=revision.product_type,
+                comment=revision.comment,
+                field=field,
+                previous=previous_value,
+                current=current_value,
+                action=change.action,
+            )
         )
     return events
 

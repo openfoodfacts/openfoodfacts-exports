@@ -93,7 +93,7 @@ class TestGenerateEvents:
             previous_product={"brands": "Nestlé"},
             current_product={"brands": "Nestlé,Nescafé"},
         )
-        assert events == [
+        assert [e.model_dump() for e in events] == [
             {
                 "id": "7622210449283_252",
                 "code": "7622210449283",
@@ -116,6 +116,7 @@ class TestGenerateEvents:
             previous_product={"labels": "should be ignored"},
             current_product={"labels": "Organic"},
         )
+        events = [e.model_dump() for e in events]
         assert events[0]["previous"] is None
         assert events[0]["current"] == "Organic"
         assert events[0]["action"] == "add"
@@ -128,6 +129,7 @@ class TestGenerateEvents:
             previous_product={"url": "http://example.org"},
             current_product={"url": "should be ignored"},
         )
+        events = [e.model_dump() for e in events]
         assert events[0]["previous"] == "http://example.org"
         assert events[0]["current"] is None
         assert events[0]["action"] == "delete"
@@ -140,6 +142,7 @@ class TestGenerateEvents:
             previous_product={"nutriments": {"energy": {"value": 42}}},
             current_product={"nutriments": {"energy": {"value": 50}}},
         )
+        events = [e.model_dump() for e in events]
         assert events[0]["previous"] == 42
         assert events[0]["current"] == 50
 
