@@ -9,8 +9,7 @@ from typing import Any, Generator, Iterable
 import orjson
 import tqdm
 from minio import Minio, S3Error
-from openfoodfacts import APIVersion, Environment, Flavor, normalize_barcode
-from openfoodfacts.api import API
+from openfoodfacts import normalize_barcode
 from openfoodfacts.images import (
     extract_barcode_from_path,
     split_barcode,
@@ -528,72 +527,6 @@ def strip_product_from_user_ids(product: JSONType) -> JSONType:
                 image_data.pop("uploader")
                 images[image_key] = image_data
     return product
-
-
-def sync_product_revision(code: str, environment: Environment, flavor: Flavor) -> None:
-    """Synchronize a product revision to S3.
-
-    This function retrieves the product data from the Open Food Facts API and uploads it
-    to S3.
-
-    Args:
-        code: The code of the product.
-        environment: The environment to use.
-        flavor: The flavor to use.
-    """
-    api_version = APIVersion.v2
-    api = API(
-        user_agent=settings.USER_AGENT,
-        flavor=flavor,
-        environment=environment,
-        version=api_version,
-    )
-    client = get_minio_client()
-    try:
-        product = api.product.get(code=code)
-    except Exception as e:
-        logger.error("Failed to sync product revision for barcode %s: %s", code, e)
-        return
-    if product is None:
-        # Product does not exist
-        return
-    else:
-        product = strip_product_from_user_ids(product)
-        # Product found
-        upload_revision(
-            minio_client=client,
-            prefix=api_version.value,
-            code=code,
-            product=product,
-            set_as_latest=True,
-        )
-
-
-def delete_product_from_s3(barcode: str) -> None:
-    client = get_minio_client()
-    remove_latest_revision(
-        client,
-        APIVersion.v2.value,
-        barcode,
-    )
-
-
-def remove_latest_revision(minio_client: Minio, prefix: str, barcode: str):
-    """Remove the latest revision for a product from S3.
-
-    Args:
-        minio_client: The Minio client.
-        prefix: The API version we used when calling the Open Food Facts API.
-        barcode: The barcode of the product.
-    """
-    revision_path = generate_revision_path(prefix, barcode, "latest.json")
-    logger.debug(
-        "Removing latest revision for barcode %s at %s", barcode, revision_path
-    )
-    minio_client.remove_object(
-        bucket_name=settings.AWS_S3_REVISION_BUCKET,
-        object_name=revision_path,
-    )
 
 
 def upload_revision(
