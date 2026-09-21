@@ -26,17 +26,19 @@ class TestFlattenDiffs:
             "nutriments": {"change": ["energy"]},
         }
         assert flatten_diffs(diffs) == [
-            FieldChange(field="brands", action=ChangeAction.CHANGE),
-            FieldChange(field="energy", action=ChangeAction.CHANGE),
+            FieldChange(field="brands", action=ChangeAction.CHANGE, category="fields"),
+            FieldChange(
+                field="energy", action=ChangeAction.CHANGE, category="nutriments"
+            ),
         ]
 
     def test_keeps_every_operation(self):
         """add, change and delete operations are all preserved."""
         diffs = {"fields": {"add": ["labels"], "change": ["brands"], "delete": ["url"]}}
         assert flatten_diffs(diffs) == [
-            FieldChange(field="labels", action=ChangeAction.ADD),
-            FieldChange(field="brands", action=ChangeAction.CHANGE),
-            FieldChange(field="url", action=ChangeAction.DELETE),
+            FieldChange(field="labels", action=ChangeAction.ADD, category="fields"),
+            FieldChange(field="brands", action=ChangeAction.CHANGE, category="fields"),
+            FieldChange(field="url", action=ChangeAction.DELETE, category="fields"),
         ]
 
     def test_ignores_unknown_operations_and_empty_lists(self):
@@ -51,7 +53,7 @@ class TestFlattenDiffs:
             "nutriments": {"change": ["brands"]},
         }
         assert flatten_diffs(diffs) == [
-            FieldChange(field="brands", action=ChangeAction.CHANGE)
+            FieldChange(field="brands", action=ChangeAction.CHANGE, category="fields")
         ]
 
 

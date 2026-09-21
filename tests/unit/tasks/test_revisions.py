@@ -61,7 +61,7 @@ def test_upload_history_file():
     assert pushed_events == events
     assert minio_client.content_type == "application/json"
     assert minio_client.bucket_name == "openfoodfacts-product-revisions"
-    assert minio_client.object_name == f"raw/{barcode}/history.json"
+    assert minio_client.object_name == f"json/{barcode}/history.jsonl"
 
 
 class TestUploadRevision:
