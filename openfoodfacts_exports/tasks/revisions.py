@@ -354,10 +354,6 @@ def upload_all_revisions_from_recent_changes(
         code = normalize_barcode(recent_change.code)
         product_dir = root_dir / "/".join(split_barcode(code))
 
-        if not product_dir.is_dir():
-            logger.info("Product dir %s not found", product_dir)
-            continue
-
         timestamp = recent_change.t
         if min_timestamp and timestamp < min_timestamp:
             logger.debug(
@@ -369,6 +365,10 @@ def upload_all_revisions_from_recent_changes(
             continue
 
         if only_codes and recent_change.code not in only_codes:
+            continue
+
+        if not product_dir.is_dir():
+            logger.info("Product dir %s not found", product_dir)
             continue
 
         if (
