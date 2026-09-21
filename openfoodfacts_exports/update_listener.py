@@ -13,10 +13,6 @@ from openfoodfacts_exports.tasks.images import (
     delete_image_from_s3,
     upload_new_image_to_s3,
 )
-from openfoodfacts_exports.tasks.revisions import (
-    delete_product_from_s3,
-    sync_product_revision,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +39,7 @@ class UpdateListener(BaseUpdateListener):
         )
         action = event.action
         flavor = Flavor[event.flavor]
-        if action == "deleted":
-            logger.info("Product %s has been deleted", event.code)
-            delete_product_from_s3(barcode=event.code)
-        elif action == "updated":
+        if action == "updated":
             logger.info("Product %s has been updated", event.code)
             # The redis event is sometimes published before Product Opener finishes
             # to process the request responsible for the change, so we wait 2 seconds
@@ -55,24 +48,10 @@ class UpdateListener(BaseUpdateListener):
                 logger.debug("Waiting 2 seconds before processing the upload")
                 time.sleep(2)
 
-            self.process_product_update(event, environment, flavor)
             if event.is_image_upload():
                 self.process_image_upload(event, environment, flavor)
             elif event.is_image_deletion():
                 self.process_image_deletion(event)
-
-    def process_product_update(
-        self, event: ProductUpdateEvent, environment: Environment, flavor: Flavor
-    ):
-        logger.info(
-            "Syncing product revision for barcode %s (flavor: %s, environment: %s)",
-            event.code,
-            flavor,
-            environment,
-        )
-        sync_product_revision(
-            barcode=event.code, environment=environment, flavor=flavor
-        )
 
     def process_image_upload(
         self, event: ProductUpdateEvent, environment: Environment, flavor: Flavor
