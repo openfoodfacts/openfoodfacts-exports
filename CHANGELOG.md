@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.9.0...v0.10.0) (2026-09-21)
+
+
+### Features
+
+* add revision and history file mass upload ([#83](https://github.com/openfoodfacts/openfoodfacts-exports/issues/83)) ([2250212](https://github.com/openfoodfacts/openfoodfacts-exports/commit/22502123ec92d090ade32e4ad893ebcc69aa9d35))
+
 ## [0.9.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.8.1...v0.9.0) (2026-07-16)
 
 
