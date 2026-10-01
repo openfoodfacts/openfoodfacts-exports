@@ -1,0 +1,102 @@
+name: Ventilate issues to the right GitHub projects
+
+permissions: {}
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - deleted
+      - transferred
+      - pinned
+      - unpinned
+      - closed
+      - reopened
+      - assigned
+      - unassigned
+      - labeled
+      - unlabeled
+      - locked
+      - unlocked
+      - milestoned
+      - demilestoned
+
+  pull_request_target:
+    types:
+    - assigned
+    - unassigned
+    - labeled
+    - unlabeled
+    - opened
+    - edited
+    - closed
+    - reopened
+    - synchronize
+    - converted_to_draft
+    - ready_for_review
+    - locked
+    - unlocked
+    - review_requested
+    - review_request_removed
+    - auto_merge_enabled
+    - auto_merge_disabled
+jobs:
+  add-to-projects:
+    name: Ventilate issues to the right GitHub projects
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/36 # Add issue to the open pet food facts project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: 🐾 Open Pet Food Facts
+          label-operator: OR
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/43 # Add issue to the open products facts project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: 📸 Open Products Facts
+          label-operator: OR
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/37 # Add issue to the open beauty facts project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: 🧴 Open Beauty Facts
+          label-operator: OR
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/25 # Add issue to the documentation project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: 📚 Documentation
+          label-operator: OR
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/5 # Add issue to the folksonomy project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: 🏷️ Folksonomy Project
+          label-operator: OR          
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/19 # Add issue to the infrastructure project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: infrastructure
+          label-operator: OR   
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/57 # Add issue to the Most impactful issues board
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: 🎯 P0, 🎯 P1
+          label-operator: OR
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/84 # Add issue to the Metrics project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: matomo
+          label-operator: OR
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/openfoodfacts/projects/105 # Add issue to the Open Prices project
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: matomo
+          label-operator: OR
