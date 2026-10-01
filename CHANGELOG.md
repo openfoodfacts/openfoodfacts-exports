@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.10.0...v0.10.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* Change label from 'matomo' to 'Open Prices' ([9a8408f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/9a8408f098a9bad9d6f9e3c79e2e8cfdec37f9e9))
+
 ## [0.10.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.9.0...v0.10.0) (2026-09-21)
 
 
