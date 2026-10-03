@@ -15,6 +15,9 @@ if not DATASET_DIR.exists():
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 
+# Fraction of rejected products allowed before blocking an export (default: 50%).
+MAX_EXPORT_REJECTION_RATE = float(os.getenv("MAX_EXPORT_REJECTION_RATE", "0.5"))
+
 ENABLE_HF_PUSH = int(os.getenv("ENABLE_HF_PUSH", "0"))
 
 ENABLE_S3_PUSH = int(os.getenv("ENABLE_S3_PUSH", "0"))
