@@ -14,6 +14,11 @@ from openfoodfacts.utils import (
     should_download_file,
 )
 
+from openfoodfacts_exports.exports.csv.food import (
+    FOOD_CSV_PATH,
+    export_food_csv,
+    upload_food_csv,
+)
 from openfoodfacts_exports.exports.csv.mobile import generate_push_mobile_app_dump
 from openfoodfacts_exports.exports.parquet import PARQUET_DATASET_PATH, export_parquet
 from openfoodfacts_exports.exports.parquet.price import PRICE_DATASET_PATH
@@ -58,6 +63,19 @@ def export_job(export_flavor: ExportFlavor) -> None:
         )
 
         if flavor is Flavor.off:
+            csv_job = high_queue.enqueue(
+                export_food_csv,
+                dataset_path,
+                FOOD_CSV_PATH,
+                job_timeout="3h",
+            )
+            high_queue.enqueue(
+                upload_food_csv,
+                FOOD_CSV_PATH,
+                depends_on=csv_job,
+                retry=Retry(max=3),
+                job_timeout="1h",
+            )
             high_queue.enqueue(
                 generate_push_mobile_app_dump,
                 PARQUET_DATASET_PATH[flavor],

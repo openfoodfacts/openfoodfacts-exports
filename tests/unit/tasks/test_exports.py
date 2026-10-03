@@ -10,7 +10,8 @@ from openfoodfacts_exports.types import ExportFlavor
 @pytest.mark.parametrize("flavor", [ExportFlavor.off, ExportFlavor.obf])
 def test_product_upload_depends_on_conversion(mocker, flavor):
     mocker.patch.object(tasks, "get_dataset", return_value=Path("input.jsonl"))
-    enqueue = mocker.patch.object(tasks.high_queue, "enqueue")
+    jobs = [mocker.Mock() for _ in range(5)]
+    enqueue = mocker.patch.object(tasks.high_queue, "enqueue", side_effect=jobs)
     tasks.export_job(flavor)
     conversion, upload = enqueue.call_args_list[:2]
     assert conversion.args[0] is tasks.export_parquet
@@ -18,12 +19,20 @@ def test_product_upload_depends_on_conversion(mocker, flavor):
     assert upload.args[0] is tasks.upload_parquet
     assert upload.args[1] == conversion.args[2]
     assert upload.args[2] == "openfoodfacts/product-database"
-    assert upload.kwargs["depends_on"] is enqueue.return_value
+    assert upload.kwargs["depends_on"] is jobs[0]
     assert upload.kwargs["retry"].max == 3
     if flavor == ExportFlavor.off:
-        mobile = enqueue.call_args_list[2]
+        csv_conversion, csv_upload, mobile = enqueue.call_args_list[2:]
+        assert csv_conversion.args[0] is tasks.export_food_csv
+        assert csv_conversion.args[1] == conversion.args[1]
+        assert csv_conversion.args[2] == tasks.FOOD_CSV_PATH
+        assert csv_upload.args[1] == tasks.FOOD_CSV_PATH
+        assert "depends_on" not in csv_conversion.kwargs
+        assert csv_upload.args[0] is tasks.upload_food_csv
+        assert csv_upload.kwargs["depends_on"] is jobs[2]
+        assert csv_upload.kwargs["retry"].max == 3
         assert mobile.args[0] is tasks.generate_push_mobile_app_dump
-        assert mobile.kwargs["depends_on"] is enqueue.return_value
+        assert mobile.kwargs["depends_on"] is jobs[0]
     else:
         assert enqueue.call_count == 2
 
