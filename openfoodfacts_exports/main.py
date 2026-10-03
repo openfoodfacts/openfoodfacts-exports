@@ -67,6 +67,23 @@ def launch_export(flavor: ExportFlavor) -> None:
 
 
 @app.command()
+def publish_historical_events() -> None:
+    """Concatenate the history files of all products into the public historical
+    events dump, and push it to S3."""
+    from openfoodfacts.utils import get_logger
+
+    from openfoodfacts_exports.tasks.historical_events import (
+        publish_historical_events_dump,
+    )
+    from openfoodfacts_exports.utils import init_sentry
+
+    # configure root logger
+    get_logger()
+    init_sentry()
+    publish_historical_events_dump()
+
+
+@app.command()
 def upload_all_revisions(
     product_type: Annotated[
         str,
