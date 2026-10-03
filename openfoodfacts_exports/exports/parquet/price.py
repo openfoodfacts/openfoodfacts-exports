@@ -14,7 +14,6 @@ from openfoodfacts.utils import jsonl_iter
 from pydantic import BaseModel, field_serializer
 
 from openfoodfacts_exports import settings
-from openfoodfacts_exports.exports.parquet.common import push_parquet_file_to_hf
 
 logger = logging.getLogger(__name__)
 
@@ -272,10 +271,11 @@ def convert_jsonl_to_parquet(
 
 
 def export_parquet(
-    dataset_paths: dict[str, Path], output_path: Path, use_tqdm: bool = False
+    dataset_paths: dict[str, Path],
+    output_path: Path,
+    use_tqdm: bool = False,
 ) -> None:
-    """Convert a JSONL dataset to Parquet format and push it to Hugging Face
-    Hub.
+    """Convert a JSONL dataset to a local Parquet file.
 
     Args:
         dataset_path (Path): The path to the JSONL dataset.
@@ -297,10 +297,4 @@ def export_parquet(
         # Move dataset file to output_path
         shutil.move(tmp_converted_parquet_path, output_path)
 
-    if settings.ENABLE_HF_PUSH:
-        push_parquet_file_to_hf(
-            data_path=output_path, repo_id="openfoodfacts/open-prices"
-        )
-    else:
-        logger.info("Hugging Face push is disabled.")
     logger.info("JSONL to Parquet conversion and postprocessing completed.")

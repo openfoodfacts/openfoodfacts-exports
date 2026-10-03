@@ -195,7 +195,7 @@ def test_quality_limits(read, exported, rejected, limit, passes):
 
 
 @pytest.mark.parametrize("records", [[], [{}], [{"code": "123"}, {}]])
-def test_invalid_export_preserves_previous_file_and_blocks_upload(
+def test_invalid_export_preserves_previous_file(
     tmp_path,
     monkeypatch,
     mocker,
@@ -215,7 +215,7 @@ def test_invalid_export_preserves_previous_file_and_blocks_upload(
     monkeypatch.setattr(settings, "ENABLE_HF_PUSH", 1)
     monkeypatch.setattr(settings, "MAX_EXPORT_REJECTION_RATE", 0.01)
     upload = mocker.patch(
-        "openfoodfacts_exports.exports.parquet.push_parquet_file_to_hf"
+        "openfoodfacts_exports.exports.parquet.common.push_parquet_file_to_hf"
     )
     with pytest.raises(ValueError):
         export_parquet(source, output, Flavor.obf)
@@ -223,24 +223,45 @@ def test_invalid_export_preserves_previous_file_and_blocks_upload(
     assert output.read_bytes() == b"previous export"
 
 
-def test_valid_export_is_published(tmp_path, monkeypatch, mocker):
+@pytest.mark.parametrize("flavor_name", ["off", "obf"])
+def test_conversion_never_uploads(tmp_path, monkeypatch, mocker, flavor_name):
     from openfoodfacts import Flavor
 
     from openfoodfacts_exports import settings
     from openfoodfacts_exports.exports.parquet import export_parquet
 
+    monkeypatch.setattr(settings, "ENABLE_HF_PUSH", 1)
     source = tmp_path / "input.jsonl"
     source.write_text('{"code":"123"}\n')
-    output = tmp_path / "beauty.parquet"
-    monkeypatch.setattr(settings, "ENABLE_HF_PUSH", 1)
-    monkeypatch.setattr(settings, "MAX_EXPORT_REJECTION_RATE", 0.01)
+    output = tmp_path / "food.parquet"
     upload = mocker.patch(
-        "openfoodfacts_exports.exports.parquet.push_parquet_file_to_hf"
+        "openfoodfacts_exports.exports.parquet.common.push_parquet_file_to_hf"
     )
-    stats = export_parquet(source, output, Flavor.obf)
+    stats = export_parquet(source, output, Flavor[flavor_name])
     assert stats.records_exported == 1
     assert output.exists()
-    upload.assert_called_once_with(
-        data_path=output, repo_id="openfoodfacts/product-database"
+    upload.assert_not_called()
+
+
+def test_price_conversion_never_uploads(tmp_path, monkeypatch, mocker):
+    from openfoodfacts_exports import settings
+    from openfoodfacts_exports.exports.parquet import price
+
+    monkeypatch.setattr(settings, "ENABLE_HF_PUSH", 1)
+    upload = mocker.patch(
+        "openfoodfacts_exports.exports.parquet.common.push_parquet_file_to_hf"
     )
 
+    def write_converted_file(**kwargs):
+        kwargs["output_file_path"].write_bytes(b"converted prices")
+
+    mocker.patch.object(
+        price, "convert_jsonl_to_parquet", side_effect=write_converted_file
+    )
+    output = tmp_path / "prices.parquet"
+    price.export_parquet(
+        {key: tmp_path / f"{key}.jsonl" for key in ("price", "proof", "location")},
+        output,
+    )
+    assert output.read_bytes() == b"converted prices"
+    upload.assert_not_called()

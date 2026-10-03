@@ -14,7 +14,7 @@ from openfoodfacts.utils import jsonl_iter
 from openfoodfacts_exports import settings
 
 from .beauty import BEAUTY_DTYPE_MAP, BEAUTY_PRODUCT_SCHEMA, BeautyProduct
-from .common import Product, push_parquet_file_to_hf
+from .common import Product
 from .food import FOOD_DTYPE_MAP, FOOD_PRODUCT_SCHEMA, FoodProduct
 
 logger = logging.getLogger(__name__)
@@ -54,8 +54,7 @@ def export_parquet(
     flavor: Flavor,
     use_tqdm: bool = False,
 ) -> ExportStats:
-    """Convert a JSONL dataset to Parquet format and push it to Hugging Face
-    Hub.
+    """Convert a JSONL dataset to a local Parquet file.
 
     Args:
         dataset_path (Path): The path to the JSONL dataset.
@@ -92,12 +91,6 @@ def export_parquet(
         # Move dataset file to output_path
         shutil.move(tmp_converted_parquet_path, output_path)
 
-    if settings.ENABLE_HF_PUSH:
-        push_parquet_file_to_hf(
-            data_path=output_path, repo_id="openfoodfacts/product-database"
-        )
-    else:
-        logger.info("Hugging Face push is disabled.")
     logger.info("JSONL to Parquet conversion and postprocessing completed.")
     return stats
 

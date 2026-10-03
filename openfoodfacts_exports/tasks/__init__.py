@@ -1,6 +1,11 @@
 import logging
 from pathlib import Path
 
+from rq import Retry
+
+from openfoodfacts_exports import settings
+from openfoodfacts_exports.exports.parquet.common import push_parquet_file_to_hf
+
 from openfoodfacts import Flavor, get_dataset
 from openfoodfacts.dataset import DEFAULT_CACHE_DIR
 from openfoodfacts.types import DatasetType
@@ -39,8 +44,17 @@ def export_job(export_flavor: ExportFlavor) -> None:
             export_parquet,
             dataset_path,
             PARQUET_DATASET_PATH[flavor],
-            export_flavor,
+            flavor,
             job_timeout="3h",
+        )
+
+        high_queue.enqueue(
+            upload_parquet,
+            PARQUET_DATASET_PATH[flavor],
+            "openfoodfacts/product-database",
+            depends_on=export_parquet_job,
+            retry=Retry(max=3),
+            job_timeout="1h",
         )
 
         if flavor is Flavor.off:
@@ -66,12 +80,28 @@ def export_price_job() -> None:
         dataset_paths[key] = get_price_dataset(file_name, download_newer=True)
 
     logger.info("Enqueueing export job for price dataset")
-    high_queue.enqueue(
+    conversion_job = high_queue.enqueue(
         export_price_parquet,
         dataset_paths,
         PRICE_DATASET_PATH,
         job_timeout="3h",
     )
+    high_queue.enqueue(
+        upload_parquet,
+        PRICE_DATASET_PATH,
+        "openfoodfacts/open-prices",
+        depends_on=conversion_job,
+        retry=Retry(max=3),
+        job_timeout="1h",
+    )
+
+
+def upload_parquet(data_path: Path, repo_id: str) -> None:
+    """Upload an existing export; retries do not repeat conversion."""
+    if settings.ENABLE_HF_PUSH:
+        push_parquet_file_to_hf(data_path=data_path, repo_id=repo_id)
+    else:
+        logger.info("Hugging Face push is disabled.")
 
 
 def get_price_dataset(
