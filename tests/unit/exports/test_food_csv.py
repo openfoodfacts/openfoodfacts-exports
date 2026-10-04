@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from openfoodfacts_exports import settings
+from openfoodfacts_exports.exports.csv import food
 from openfoodfacts_exports.exports.csv.columns import FOOD_CSV_COLUMNS
 from openfoodfacts_exports.exports.csv.food import (
     export_food_csv,
@@ -130,7 +131,7 @@ def test_csv_quality_and_previous_file(tmp_path, monkeypatch, records, passes):
     with gzip.open(source, "wt") as stream:
         for record in records:
             stream.write(json.dumps(record) + "\n")
-    output = tmp_path / "food.csv.gz"
+    output = tmp_path / "food.csv"
     output.write_bytes(b"previous export")
     if not passes:
         with pytest.raises(ValueError):
@@ -140,7 +141,7 @@ def test_csv_quality_and_previous_file(tmp_path, monkeypatch, records, passes):
         stats = export_food_csv(source, output, names={})
         assert stats.records_read == 2
         assert stats.records_exported == stats.records_rejected == 1
-        with gzip.open(output, "rt") as stream:
+        with output.open() as stream:
             rows = list(csv.reader(stream, delimiter="\t"))
         assert rows[0] == list(FOOD_CSV_COLUMNS)
         assert len(rows[1]) == 211
@@ -228,3 +229,148 @@ def test_invalid_taxonomy_response_is_not_cached(tmp_path, monkeypatch, mocker):
     with pytest.raises(ValueError, match="Invalid taxonomy"):
         load_english_names()
     assert list((tmp_path / "taxonomies").iterdir()) == []
+
+
+def test_missing_cells_skip_formatting(mocker):
+    formatter = mocker.patch.object(food, "format_value", wraps=food.format_value)
+    row = as_dict({"code": "123", "nutriments": {"fat_100g": 0}})
+    assert row["fat_100g"] == "0"
+    assert row["salt_100g"] == ""
+    assert all(call.args[0] is not None for call in formatter.call_args_list)
+    assert formatter.call_count < len(FOOD_CSV_COLUMNS)
+
+
+@pytest.mark.parametrize("level", [0, 1, 6, 9])
+def test_configured_gzip_level(tmp_path, monkeypatch, mocker, level):
+    monkeypatch.setattr(settings, "CSV_GZIP_COMPRESSION_LEVEL", level)
+    source = tmp_path / "source.csv"
+    source.write_text("code\tproduct_name\n123\tExample\n")
+    output = tmp_path / "food.csv.gz"
+    food.compress_food_csv_gzip(source, output)
+    with gzip.open(output, "rb") as stream:
+        assert stream.read() == source.read_bytes()
+
+
+@pytest.mark.parametrize("level", [-1, 10])
+def test_invalid_gzip_level_preserves_output(tmp_path, monkeypatch, mocker, level):
+    monkeypatch.setattr(settings, "CSV_GZIP_COMPRESSION_LEVEL", level)
+    source = tmp_path / "source.jsonl"
+    source.write_text('{"code":"123"}\n')
+    output = tmp_path / "food.csv.gz"
+    output.write_bytes(b"previous export")
+    load = mocker.patch("openfoodfacts_exports.exports.csv.food.load_english_names")
+    with pytest.raises(ValueError, match="compression level"):
+        food.compress_food_csv_gzip(source, output)
+    load.assert_not_called()
+    assert output.read_bytes() == b"previous export"
+
+
+@pytest.mark.parametrize("level", [3, 19])
+def test_zstd_preserves_csv_content(tmp_path, monkeypatch, level):
+    import zstandard
+
+    monkeypatch.setattr(settings, "CSV_ZSTD_COMPRESSION_LEVEL", level)
+    source = tmp_path / "source.csv"
+    source.write_text("code\tproduct_name\n00123\tExample\n")
+    gzip_path = tmp_path / "food.csv.gz"
+    output = tmp_path / "food.csv.zst"
+    food.compress_food_csv_zstd(source, output)
+    assert not gzip_path.exists()
+    food.compress_food_csv_gzip(source, gzip_path)
+    with output.open("rb") as stream:
+        with zstandard.ZstdDecompressor().stream_reader(stream) as reader:
+            assert reader.read() == source.read_bytes()
+
+
+@pytest.mark.parametrize("format_name", ["gzip", "zstd"])
+@pytest.mark.parametrize("failure", ["missing", "invalid_level"])
+def test_compression_failure_preserves_existing_file(
+    tmp_path,
+    monkeypatch,
+    format_name,
+    failure,
+):
+    source = tmp_path / "source.csv"
+    output = tmp_path / "compressed"
+    output.write_bytes(b"previous export")
+    if failure == "invalid_level":
+        setting = (
+            "CSV_GZIP_COMPRESSION_LEVEL"
+            if format_name == "gzip"
+            else "CSV_ZSTD_COMPRESSION_LEVEL"
+        )
+        monkeypatch.setattr(settings, setting, 23)
+        error = ValueError
+    else:
+        error = FileNotFoundError
+    compress = getattr(food, f"compress_food_csv_{format_name}")
+    with pytest.raises(error):
+        compress(source, output)
+    assert output.read_bytes() == b"previous export"
+    assert not list(tmp_path.glob("tmp*"))
+
+
+def test_shared_plain_export_and_cleanup(tmp_path):
+    import zstandard
+
+    source = tmp_path / "source.jsonl"
+    source.write_text('{"code":"00123", "product_name":"Example"}\n')
+    plain = tmp_path / "food.csv"
+    gzip_path = tmp_path / "food.csv.gz"
+    zstd_path = tmp_path / "food.csv.zst"
+    stats = export_food_csv(source, plain, names={})
+    assert stats.records_exported == 1
+    expected = plain.read_bytes()
+    food.compress_food_csv_gzip(plain, gzip_path)
+    assert plain.exists()
+    food.compress_food_csv_zstd(plain, zstd_path)
+    with gzip.open(gzip_path, "rb") as stream:
+        assert stream.read() == expected
+    with zstd_path.open("rb") as stream:
+        with zstandard.ZstdDecompressor().stream_reader(stream) as reader:
+            assert reader.read() == expected
+    food.cleanup_food_csv(plain)
+    food.cleanup_food_csv(plain)
+    assert not plain.exists()
+    assert gzip_path.exists() and zstd_path.exists()
+
+
+def test_zstd_upload_content_type(monkeypatch, mocker):
+    monkeypatch.setattr(settings, "ENABLE_S3_PUSH", 1)
+    client = mocker.patch.object(food, "get_minio_client")
+    output = Path("en.openfoodfacts.org.products.csv.zst")
+    upload_food_csv(output)
+    client.return_value.fput_object.assert_called_once_with(
+        settings.AWS_S3_DATASET_BUCKET,
+        output.name,
+        str(output),
+        content_type="application/zstd",
+    )
+
+
+@pytest.mark.parametrize("format_name", ["gzip", "zstd"])
+def test_interrupted_compression_keeps_plain_and_previous_output(
+    tmp_path,
+    mocker,
+    format_name,
+):
+    source = tmp_path / "source.csv"
+    source.write_bytes(b"validated CSV")
+    output = tmp_path / "compressed"
+    output.write_bytes(b"previous export")
+
+    def fail_copy(source, destination, **kwargs):
+        destination.write(b"partial output")
+        raise OSError("write failed")
+
+    if format_name == "gzip":
+        mocker.patch.object(food.shutil, "copyfileobj", side_effect=fail_copy)
+    else:
+        compressor = mocker.Mock()
+        compressor.copy_stream.side_effect = fail_copy
+        mocker.patch.object(food.zstandard, "ZstdCompressor", return_value=compressor)
+    with pytest.raises(OSError, match="write failed"):
+        getattr(food, f"compress_food_csv_{format_name}")(source, output)
+    assert source.read_bytes() == b"validated CSV"
+    assert output.read_bytes() == b"previous export"
+    assert not list(tmp_path.glob("tmp*"))
