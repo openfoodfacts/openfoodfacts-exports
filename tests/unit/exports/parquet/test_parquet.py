@@ -9,6 +9,25 @@ from openfoodfacts_exports.exports.parquet.beauty import (
     BeautyProduct,
 )
 from openfoodfacts_exports.exports.parquet.common import Product
+from openfoodfacts_exports.exports.parquet.food import FOOD_PRODUCT_SCHEMA, FoodProduct
+from openfoodfacts_exports.exports.parquet.petfood import (
+    PETFOOD_PRODUCT_SCHEMA,
+    PetFoodProduct,
+)
+
+
+@pytest.mark.parametrize(
+    "pydantic_cls,schema",
+    [
+        (FoodProduct, FOOD_PRODUCT_SCHEMA),
+        (BeautyProduct, BEAUTY_PRODUCT_SCHEMA),
+        (PetFoodProduct, PETFOOD_PRODUCT_SCHEMA),
+    ],
+)
+def test_schema_matches_pydantic_fields(pydantic_cls: type[Product], schema):
+    """Every exported field must have a Parquet column, and vice versa."""
+    fields = {field.alias or name for name, field in pydantic_cls.model_fields.items()}
+    assert fields == set(schema.names)
 
 
 class TestConvertJSONLToParquet:
