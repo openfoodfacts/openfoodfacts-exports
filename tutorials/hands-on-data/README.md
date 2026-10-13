@@ -22,4 +22,4 @@ jupyter lab
 
 Go to [hugging face](https://huggingface.co), log-in (eventually creating an account),
 and create a new token.
-Put the content in a file named `hf-token` at the root of this project.
+Put the content in a file named `hf-token` in this folder.
