@@ -339,13 +339,31 @@ def normalize_nutriments(data: dict) -> dict:
         # From schema version 1003, nutrition data lives in `nutrition`: a
         # remaining legacy `nutriments` field (often an empty dict) is ignored.
         data.pop("nutriments", None)
+        nutrition_data = data.get("nutrition") or {}
         try:
-            nutrition = NutritionV3.model_validate(data.get("nutrition") or {})
+            nutrition = NutritionV3.model_validate(nutrition_data)
         except ValidationError:
-            # ex: Open Pet Food Facts aggregated sets use `per: 1kg`, which is
-            # not a supported basis: export the product without nutriments
-            # rather than dropping the whole product.
-            logger.debug("Unsupported nutrition data for product %s", data.get("code"))
+            # The product is exported without nutriments rather than dropped.
+            # Expected case: Open Pet Food Facts aggregated sets use `per: 1kg`,
+            # which is not a supported basis. Anything else is unexpected.
+            aggregated_set_data = (
+                nutrition_data.get("aggregated_set")
+                if isinstance(nutrition_data, dict)
+                else None
+            )
+            if (
+                isinstance(aggregated_set_data, dict)
+                and aggregated_set_data.get("per") == "1kg"
+            ):
+                logger.debug(
+                    "Unsupported nutrition basis for product %s", data.get("code")
+                )
+            else:
+                logger.warning(
+                    "Invalid nutrition data for product %s",
+                    data.get("code"),
+                    exc_info=True,
+                )
             nutrition = None
         aggregated_set = nutrition.aggregated_set if nutrition else None
         if aggregated_set:

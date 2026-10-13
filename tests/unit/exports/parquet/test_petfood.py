@@ -1,3 +1,6 @@
+import copy
+import logging
+
 import pytest
 
 from openfoodfacts_exports.exports.parquet.petfood import PetFoodProduct
@@ -128,6 +131,24 @@ class TestPetFoodProduct:
         )
         assert product.code == "3017620422003"
         assert product.nutriments is None
+
+    def test_unsupported_basis_is_not_a_warning(self, caplog):
+        with caplog.at_level(logging.DEBUG):
+            output = PetFoodProduct.parse_nutriments(
+                {"code": "123", "schema_version": 1004, "nutrition": NUTRITION_PER_1KG}
+            )
+        assert output["nutriments"] is None
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+    def test_invalid_nutrition_is_logged_as_warning(self, caplog):
+        nutrition = copy.deepcopy(NUTRITION_PER_100G)
+        nutrition["aggregated_set"]["nutrients"]["moisture"]["value"] = "abc"
+        with caplog.at_level(logging.DEBUG):
+            output = PetFoodProduct.parse_nutriments(
+                {"code": "123", "schema_version": 1004, "nutrition": nutrition}
+            )
+        assert output["nutriments"] is None
+        assert [r for r in caplog.records if r.levelno == logging.WARNING]
 
     def test_numeric_ingredient_quantity(self):
         product = PetFoodProduct(
