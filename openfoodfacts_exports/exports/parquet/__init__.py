@@ -15,6 +15,7 @@ from openfoodfacts_exports import settings
 from .beauty import BEAUTY_DTYPE_MAP, BEAUTY_PRODUCT_SCHEMA, BeautyProduct
 from .common import Product, push_parquet_file_to_hf
 from .food import FOOD_DTYPE_MAP, FOOD_PRODUCT_SCHEMA, FoodProduct
+from .petfood import PETFOOD_DTYPE_MAP, PETFOOD_PRODUCT_SCHEMA, PetFoodProduct
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 PARQUET_DATASET_PATH = {
     Flavor.off: settings.DATASET_DIR / "food.parquet",
     Flavor.obf: settings.DATASET_DIR / "beauty.parquet",
+    Flavor.opff: settings.DATASET_DIR / "petfood.parquet",
 }
 
 
@@ -49,6 +51,10 @@ def export_parquet(
         pydantic_cls = BeautyProduct
         schema = BEAUTY_PRODUCT_SCHEMA
         dtype_map = BEAUTY_DTYPE_MAP
+    elif flavor == Flavor.opff:
+        pydantic_cls = PetFoodProduct
+        schema = PETFOOD_PRODUCT_SCHEMA
+        dtype_map = PETFOOD_DTYPE_MAP
     else:
         raise ValueError(f"Unsupported flavor: {flavor}")
 

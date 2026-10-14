@@ -19,6 +19,11 @@ from openfoodfacts_exports.exports.parquet.food import (
     FOOD_PRODUCT_SCHEMA,
     FoodProduct,
 )
+from openfoodfacts_exports.exports.parquet.petfood import (
+    PETFOOD_DTYPE_MAP,
+    PETFOOD_PRODUCT_SCHEMA,
+    PetFoodProduct,
+)
 
 
 class TestConvertJSONLToParquet:
@@ -38,6 +43,13 @@ class TestConvertJSONLToParquet:
                 BeautyProduct,
                 BEAUTY_PRODUCT_SCHEMA,
                 BEAUTY_DTYPE_MAP,
+            ),
+            (
+                "https://raw.githubusercontent.com/openfoodfacts/test-data/refs/heads/main/openfoodfacts-exports/tests/openpetfoodfacts-products-min.jsonl.gz",
+                "https://raw.githubusercontent.com/openfoodfacts/test-data/refs/heads/main/openfoodfacts-exports/tests/openpetfoodfacts-min.parquet",
+                PetFoodProduct,
+                PETFOOD_PRODUCT_SCHEMA,
+                PETFOOD_DTYPE_MAP,
             ),
         ],
     )

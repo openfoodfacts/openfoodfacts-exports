@@ -4,7 +4,8 @@ from pathlib import Path
 import pyarrow as pa
 from huggingface_hub import HfApi
 from openfoodfacts.images import convert_to_legacy_schema
-from pydantic import BaseModel, Field, model_validator
+from openfoodfacts.types import JSONType, NutritionV3
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class Ingredient(BaseModel):
     labels: str | None = None
     origins: str | None = None
     ecobalyse_proxy_code: str | None = None
-    quantity: str | None = None
+    quantity: str | None = Field(default=None, coerce_numbers_to_str=True)
     quantity_g: float | None = None
     ciqual_proxy_food_code: str | None = None
 
@@ -297,6 +298,117 @@ def fix_food_code_key(key: str) -> str:
     # NOTE: Sometimes the field is _cod and not _code, probably a bug.
     key = key.replace("_cod", "_code") if key.endswith("_cod") else key
     return key
+
+
+def normalize_nutriments(data: dict) -> dict:
+    """Convert the nutrition data of a product into the `nutriments` list
+    expected by `NutrimentField`.
+
+    Products with `schema_version < 1003` store nutrition data in the legacy
+    flat `nutriments` dict (ex: `fat_100g`), more recent products in the
+    `nutrition` field (only its aggregated set is exported).
+
+    Shared by all product types with nutrition facts (food, pet food).
+    """
+    schema_version = data.get("schema_version", 999)
+    if schema_version < 1003:
+        nutriments = data.pop("nutriments", None)
+        parsed_nutriments: dict[str, dict] = {}
+        nutriments_end_mapping = {
+            "_prepared_100g": "prepared_100g",
+            "_prepared_serving": "prepared_serving",
+            "_prepared_unit": "prepared_unit",
+            "_prepared_value": "prepared_value",
+            "_unit": "unit",
+            "_value": "value",
+            "_100g": "100g",
+            "_serving": "serving",
+        }
+        if nutriments:
+            for key, value in nutriments.items():
+                for end_key, new_key in nutriments_end_mapping.items():
+                    if key.endswith(end_key):
+                        key = key.replace(end_key, "")
+                        parsed_nutriments.setdefault(key, {})
+                        parsed_nutriments[key][new_key] = value
+
+            data["nutriments"] = [
+                {"name": key, **value} for key, value in parsed_nutriments.items()
+            ]
+    else:
+        # From schema version 1003, nutrition data lives in `nutrition`: a
+        # remaining legacy `nutriments` field (often an empty dict) is ignored.
+        data.pop("nutriments", None)
+        nutrition_data = data.get("nutrition") or {}
+        try:
+            nutrition = NutritionV3.model_validate(nutrition_data)
+        except ValidationError:
+            # The product is exported without nutriments rather than dropped.
+            # Expected case: Open Pet Food Facts aggregated sets use `per: 1kg`,
+            # which is not a supported basis. Anything else is unexpected.
+            aggregated_set_data = (
+                nutrition_data.get("aggregated_set")
+                if isinstance(nutrition_data, dict)
+                else None
+            )
+            if (
+                isinstance(aggregated_set_data, dict)
+                and aggregated_set_data.get("per") == "1kg"
+            ):
+                logger.debug(
+                    "Unsupported nutrition basis for product %s", data.get("code")
+                )
+            else:
+                logger.warning(
+                    "Invalid nutrition data for product %s",
+                    data.get("code"),
+                    exc_info=True,
+                )
+            nutrition = None
+        aggregated_set = nutrition.aggregated_set if nutrition else None
+        if aggregated_set:
+            per = aggregated_set.per
+            preparation = aggregated_set.preparation
+            nutriments = []
+            for (
+                nutrient_name,
+                nutrient_data,
+            ) in aggregated_set.nutrients.items():
+                item: JSONType = {
+                    "name": nutrient_name,
+                    # value and prepared_value are always kept null here (contrary
+                    # to product with schema version < 1003), as they're ambiguous
+                    "value": None,
+                    "prepared_value": None,
+                    # The rest of the fields are populated if they're found, from
+                    # the aggregated set
+                    "100g": None,
+                    "serving": None,
+                    "unit": None,
+                    "prepared_100g": None,
+                    "prepared_serving": None,
+                    "prepared_unit": None,
+                }
+                if preparation == "as_sold":
+                    key = "100g" if per in ("100g", "100ml") else "serving"
+                    item[key] = nutrient_data.value
+                    item["unit"] = nutrient_data.unit
+                else:
+                    key = (
+                        "prepared_100g"
+                        if per in ("100g", "100ml")
+                        else "prepared_serving"
+                    )
+                    item[key] = nutrient_data.value
+                    item["prepared_unit"] = nutrient_data.unit
+
+                nutriments.append(item)
+
+            data["nutriments"] = nutriments
+
+    # Make sure that the `nutriments` field is present in `data`
+    data.setdefault("nutriments", None)
+    return data
 
 
 PA_IMAGE_SIZE_DATATYPE = pa.struct(

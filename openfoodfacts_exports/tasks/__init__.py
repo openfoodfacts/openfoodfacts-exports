@@ -34,7 +34,7 @@ def export_job(export_flavor: ExportFlavor) -> None:
         flavor=flavor, dataset_type=DatasetType.jsonl, download_newer=True
     )
 
-    if flavor in (Flavor.off, Flavor.obf):
+    if flavor in (Flavor.off, Flavor.obf, Flavor.opff):
         export_parquet_job = high_queue.enqueue(
             export_parquet,
             dataset_path,
