@@ -39,3 +39,7 @@ REDIS_LATEST_ID_KEY = os.environ.get(
 )
 
 USER_AGENT = os.environ.get("USER_AGENT", "openfoodfacts-export")
+
+OPENFOODFACTS_EXPORT_DISKCACHE_PATH = os.environ.get(
+    "OPENFOODFACTS_EXPORT_DISKCACHE_PATH", None
+)

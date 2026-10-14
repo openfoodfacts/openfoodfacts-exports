@@ -111,6 +111,14 @@ def upload_all_revisions(
         list[str] | None,
         typer.Option(help="Only upload revisions for a list of barcodes"),
     ] = None,
+    use_cache: Annotated[
+        bool,
+        typer.Option(
+            help="if true, use a local disk cache to remember which product directory "
+            "was already synchronized. This flag is only used if --recent-changes-file "
+            "is provided."
+        ),
+    ] = True,
 ) -> None:
     """Upload all revisions of all products of a given type from a given directory."""
     from openfoodfacts.utils import get_logger
@@ -139,6 +147,7 @@ def upload_all_revisions(
             upload_history=upload_history,
             overwrite=overwrite,
             only_codes=only_codes,
+            use_cache=use_cache,
         )
     else:
         upload_all_revisions_from_dir(
