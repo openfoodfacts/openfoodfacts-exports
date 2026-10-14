@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.10.0...v0.11.0) (2026-10-14)
+
+
+### Features
+
+* add disk cache during revision upload to speed up process ([#101](https://github.com/openfoodfacts/openfoodfacts-exports/issues/101)) ([a195dd7](https://github.com/openfoodfacts/openfoodfacts-exports/commit/a195dd7c30d50209948a2358bb3fa0a8ba7e535c))
+* export Open Pet Food Facts data as parquet file ([#99](https://github.com/openfoodfacts/openfoodfacts-exports/issues/99)) ([4949007](https://github.com/openfoodfacts/openfoodfacts-exports/commit/4949007f81e3c5b0405bc2e5cf0608f26ade5f68))
+* update hand on data tutorial ([d030db6](https://github.com/openfoodfacts/openfoodfacts-exports/commit/d030db6553c902133773288492593a7faa18259a))
+
+
+### Bug Fixes
+
+* Change label from 'matomo' to 'Open Prices' ([9a8408f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/9a8408f098a9bad9d6f9e3c79e2e8cfdec37f9e9))
+* small update to tutorial instructions ([53351c5](https://github.com/openfoodfacts/openfoodfacts-exports/commit/53351c54b6b5e4a7a39367d7fc5c77672783cf04))
+
 ## [0.10.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.9.0...v0.10.0) (2026-09-21)
 
 
