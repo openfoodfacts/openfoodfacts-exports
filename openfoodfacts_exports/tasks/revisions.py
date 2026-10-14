@@ -8,6 +8,7 @@ from typing import Any, Generator, Iterable
 
 import orjson
 import tqdm
+from diskcache import Cache
 from minio import Minio, S3Error
 from openfoodfacts import normalize_barcode
 from openfoodfacts.images import (
@@ -304,6 +305,7 @@ def upload_all_revisions_from_recent_changes(
     upload_history: bool = True,
     overwrite: bool = False,
     only_codes: Iterable[str] | None = None,
+    use_cache: bool = True,
 ):
     """Upload all revisions of all products, along with their history (if
     `upload_history` is `True`), from a recent_changes JSONL file.
@@ -341,76 +343,110 @@ def upload_all_revisions_from_recent_changes(
             revisions for. If `None`, we iterate over all directory to find product
             directory, otherwise we generate product directory paths from the codes.
             Defaults to `None`.
+        use_cache (bool): if true, use a local cache (based on diskcache) to know
+            whether all product revisions were already uploaded. This should speed up
+            the process considerably. The path of the cache directory is by default
+            $USER/.cache/openfoodfacts_exports/diskcache,
+            but can be set with the $OPENFOODFACTS_EXPORT_DISKCACHE_PATH envvar.
     """
     logger.info("Uploading all revisions from %s...", root_dir)
     minio_client = get_minio_client()
 
     uploaded_revisions = 0
     uploaded_history = 0
-    pbar = tqdm.tqdm(recent_changes_iter(recent_change_file), desc="recent changes")
-    for recent_change in pbar:
-        recent_change = typing.cast(RecentChange, recent_change)
-        code = normalize_barcode(recent_change.code)
-        product_dir = root_dir / "/".join(split_barcode(code))
+    cache_dir = (
+        (
+            Path(settings.OPENFOODFACTS_EXPORT_DISKCACHE_PATH)
+            if settings.OPENFOODFACTS_EXPORT_DISKCACHE_PATH
+            else Path("~/.cache/openfoodfacts_exports/diskcache")
+        )
+        .expanduser()
+        .resolve()
+    )
+    cache = Cache(directory=cache_dir)
+    if use_cache:
+        logger.info("%d items in cache", len(cache))
 
-        timestamp = recent_change.t
-        if min_timestamp and timestamp < min_timestamp:
-            logger.debug(
-                "Timestamp of recent change is lower than min_timestamp (%s < %s), "
-                "skipping",
-                recent_change.t,
-                min_timestamp,
-            )
-            continue
-
-        if only_codes and recent_change.code not in only_codes:
-            continue
-
-        if not product_dir.is_dir():
-            logger.info("Product dir %s not found", product_dir)
-            continue
-
-        if (
-            # Check that the directory contains JSON files
-            any(True for _ in product_dir.glob("*.json"))
-        ):
-            try:
-                uploaded_revisions += upload_revisions_from_product_dir(
-                    code=code,
-                    product_dir=product_dir,
-                    minio_client=minio_client,
-                    overwrite=overwrite,
+    with cache:
+        pbar = tqdm.tqdm(recent_changes_iter(recent_change_file), desc="recent changes")
+        for recent_change in pbar:
+            recent_change = typing.cast(RecentChange, recent_change)
+            code = normalize_barcode(recent_change.code)
+            timestamp = recent_change.t
+            cache_key = f"upload_revision_from_recent_changes:{code}"
+            if use_cache and cache_key in cache:
+                logger.debug(
+                    "Skipping recent change %s (code: %s) due to cache hit",
+                    timestamp,
+                    code,
                 )
-            except Exception:
-                logger.exception(
-                    "Exception caught while uploading revisions for product %s", code
+                continue
+            product_dir = root_dir / "/".join(split_barcode(code))
+
+            if min_timestamp and timestamp < min_timestamp:
+                logger.debug(
+                    "Timestamp of recent change is lower than min_timestamp (%s < %s), "
+                    "skipping",
+                    recent_change.t,
+                    min_timestamp,
                 )
                 continue
 
-            if upload_history:
+            if only_codes and recent_change.code not in only_codes:
+                continue
+
+            if not product_dir.is_dir():
+                logger.info("Product dir %s not found", product_dir)
+                if use_cache:
+                    cache.set(cache_key, None)
+                continue
+
+            if (
+                # Check that the directory contains JSON files
+                any(True for _ in product_dir.glob("*.json"))
+            ):
                 try:
-                    history_events = upload_revision_history(
+                    uploaded_revisions += upload_revisions_from_product_dir(
                         code=code,
                         product_dir=product_dir,
-                        product_type=product_type,
                         minio_client=minio_client,
+                        overwrite=overwrite,
                     )
-                    uploaded_history += bool(history_events)
                 except Exception:
                     logger.exception(
-                        "Exception caught while uploading history for product %s",
+                        "Exception caught while uploading revisions for product %s",
                         code,
                     )
+                    continue
 
-            pbar.set_postfix(
-                {
-                    "uploaded_revisions": uploaded_revisions,
-                    "uploaded_history": uploaded_history,
-                    "timestamp": str(timestamp),
-                }
-            )
-        else:
-            logger.warning("Product dir %s contains no JSON files", product_dir)
+                if upload_history:
+                    try:
+                        history_events = upload_revision_history(
+                            code=code,
+                            product_dir=product_dir,
+                            product_type=product_type,
+                            minio_client=minio_client,
+                        )
+                        uploaded_history += bool(history_events)
+                    except Exception:
+                        logger.exception(
+                            "Exception caught while uploading history for product %s",
+                            code,
+                        )
+                        continue
+                if use_cache:
+                    cache.set(cache_key, None)
+                pbar.set_postfix(
+                    {
+                        "uploaded_revisions": uploaded_revisions,
+                        "uploaded_history": uploaded_history,
+                        "timestamp": str(timestamp),
+                    }
+                )
+            else:
+                logger.warning("Product dir %s contains no JSON files", product_dir)
+                if use_cache:
+                    cache.set(cache_key, None)
 
 
 def upload_revisions_from_product_dir(
