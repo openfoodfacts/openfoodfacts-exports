@@ -24,18 +24,6 @@ from .columns import FOOD_CSV_COLUMNS
 logger = logging.getLogger(__name__)
 FOOD_CSV_PATH = settings.DATASET_DIR / "en.openfoodfacts.org.products.csv.gz"
 FOOD_CSV_ZSTD_PATH = FOOD_CSV_PATH.with_suffix(".zst")
-TAXONOMY_FIELDS = (
-    "packaging",
-    "categories",
-    "origins",
-    "labels",
-    "countries",
-    "allergens",
-    "traces",
-    "additives",
-    "food_groups",
-    "states",
-)
 LANGUAGE_FIELDS = {
     "product_name",
     "abbreviated_product_name",
@@ -52,16 +40,27 @@ DATETIME_COLUMNS = {
 NUTRIENT_COLUMNS = tuple(
     column for column in FOOD_CSV_COLUMNS if column.endswith("_100g")
 )
-LOCALIZED_FIELDS = (*TAXONOMY_FIELDS, "brands")
 TAXONOMY_FILES = {
-    **{field: f"{field}.full.json" for field in TAXONOMY_FIELDS},
-    "additives": "additives.json",
+    "packaging": "packaging.full.json",
+    "categories": "categories.full.json",
+    "origins": "origins.full.json",
+    "labels": "labels.full.json",
+    "countries": "countries.full.json",
+    "allergens": "allergens.full.json",
     "traces": "allergens.full.json",
+    "additives": "additives.json",
+    "food_groups": "food_groups.full.json",
+    "states": "states.full.json",
 }
+TAXONOMY_FIELDS = tuple(TAXONOMY_FILES)
+LOCALIZED_FIELDS = (*TAXONOMY_FIELDS, "brands")
 
 
-def _load_taxonomy_names(path: Path) -> dict[str, str]:
+def _load_taxonomy_names(filename: str) -> dict[str, str]:
     """Read one taxonomy, caching validated downloads atomically."""
+    cache = settings.DATASET_DIR / "taxonomies"
+    cache.mkdir(exist_ok=True)
+    path = cache / filename
     response = None
     if path.exists():
         taxonomy = json.loads(path.read_text(encoding="utf-8"))
@@ -92,10 +91,8 @@ def _load_taxonomy_names(path: Path) -> dict[str, str]:
 
 def load_english_names() -> dict[str, dict[str, str]]:
     """Load display names once per taxonomy; traces share the allergen names."""
-    cache = settings.DATASET_DIR / "taxonomies"
-    cache.mkdir(exist_ok=True)
     names_by_file = {
-        filename: _load_taxonomy_names(cache / filename)
+        filename: _load_taxonomy_names(filename)
         for filename in dict.fromkeys(TAXONOMY_FILES.values())
     }
     return {
