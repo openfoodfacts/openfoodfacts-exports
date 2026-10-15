@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.11.0...v0.11.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* turn a warning log message into debug ([c8375f5](https://github.com/openfoodfacts/openfoodfacts-exports/commit/c8375f5fe58cf626b1d7a393abc3063ec523a03b))
+* validate Parquet exports and retry uploads separately ([#96](https://github.com/openfoodfacts/openfoodfacts-exports/issues/96)) ([c098643](https://github.com/openfoodfacts/openfoodfacts-exports/commit/c098643f6f14bb1fa6fa2a4192d870933077a1d9))
+
 ## [0.11.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.10.0...v0.11.0) (2026-10-14)
 
 
