@@ -359,7 +359,7 @@ def normalize_nutriments(data: dict) -> dict:
                     "Unsupported nutrition basis for product %s", data.get("code")
                 )
             else:
-                logger.warning(
+                logger.debug(
                     "Invalid nutrition data for product %s",
                     data.get("code"),
                     exc_info=True,
