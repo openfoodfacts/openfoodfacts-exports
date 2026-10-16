@@ -10,7 +10,7 @@ from openfoodfacts_exports.exports.csv import food
 from openfoodfacts_exports.exports.csv.columns import FOOD_CSV_COLUMNS
 from openfoodfacts_exports.exports.csv.food import (
     export_food_csv,
-    image_urls,
+    generate_image_urls,
     load_english_names,
     product_to_row,
     upload_food_csv,
@@ -101,7 +101,7 @@ def test_new_nutrition_and_image_schema():
 
 
 def test_images_prefer_english_then_main_language():
-    urls = image_urls(
+    urls = generate_image_urls(
         {
             "code": "123",
             "lang": "fr",
@@ -156,7 +156,7 @@ def test_csv_missing_source(tmp_path, mocker):
     load.assert_not_called()
 
 
-def test_taxonomy_names_and_cache(tmp_path, monkeypatch, mocker):
+def test_taxonomy_names_use_sdk(tmp_path, monkeypatch, mocker):
     monkeypatch.setattr(settings, "DATASET_DIR", tmp_path)
 
     payload = {
@@ -164,19 +164,28 @@ def test_taxonomy_names_and_cache(tmp_path, monkeypatch, mocker):
         "xx:test": {"name": {"xx": "International"}},
         "fr:unknown": {},
     }
-    response = mocker.Mock()
-    response.json.return_value = payload
-    response.content = json.dumps(payload).encode()
-    fetch = mocker.patch(
-        "openfoodfacts_exports.exports.csv.food.requests.get", return_value=response
+    taxonomy = mocker.Mock()
+    taxonomy.keys.return_value = payload.keys()
+    taxonomy.get_localized_name.side_effect = lambda tag, language: (
+        payload.get(tag, {}).get("name", {}).get(language)
+        or payload.get(tag, {}).get("name", {}).get("xx")
+        or tag
+    )
+    get_taxonomy = mocker.patch(
+        "openfoodfacts_exports.exports.csv.food.get_taxonomy",
+        return_value=taxonomy,
     )
     names = load_english_names()
     assert names["countries"]["en:france"] == "France"
     assert names["countries"]["xx:test"] == "International"
     assert names["countries"]["fr:unknown"] == "fr:unknown"
-    fetch.reset_mock()
-    assert load_english_names() == names
-    fetch.assert_not_called()
+    assert names["food_groups"]["en:france"] == "France"
+    assert get_taxonomy.call_count == 9
+    assert all(call.kwargs["download_newer"] for call in get_taxonomy.call_args_list)
+    assert any(
+        call.args[0] is food.TaxonomyType.food_group
+        for call in get_taxonomy.call_args_list
+    )
 
 
 @pytest.mark.parametrize("enabled", [0, 1])
@@ -196,19 +205,18 @@ def test_csv_upload_setting(monkeypatch, mocker, enabled):
         client.assert_not_called()
 
 
-def test_failed_taxonomy_download_is_not_cached(tmp_path, monkeypatch, mocker):
+def test_taxonomy_download_error_propagates(tmp_path, monkeypatch, mocker):
     import requests
 
     monkeypatch.setattr(settings, "DATASET_DIR", tmp_path)
-    response = mocker.Mock()
-    response.raise_for_status.side_effect = requests.HTTPError("download failed")
-    fetch = mocker.patch(
-        "openfoodfacts_exports.exports.csv.food.requests.get", return_value=response
+    get_taxonomy = mocker.patch(
+        "openfoodfacts_exports.exports.csv.food.get_taxonomy",
+        side_effect=requests.HTTPError("download failed"),
     )
     with pytest.raises(requests.HTTPError):
         load_english_names()
-    assert list((tmp_path / "taxonomies").iterdir()) == []
-    assert fetch.call_args.kwargs["headers"]["User-Agent"] == settings.USER_AGENT
+    get_taxonomy.assert_called_once()
+    assert not (tmp_path / "taxonomies").exists()
 
 
 @pytest.mark.parametrize("value,expected", [(True, "on"), (False, ""), ("on", "on")])
@@ -217,18 +225,6 @@ def test_no_nutrition_flag(value, expected):
         as_dict({"code": "123", "no_nutrition_data": value})["no_nutrition_data"]
         == expected
     )
-
-
-def test_invalid_taxonomy_response_is_not_cached(tmp_path, monkeypatch, mocker):
-    monkeypatch.setattr(settings, "DATASET_DIR", tmp_path)
-    response = mocker.Mock()
-    response.json.return_value = ["unexpected schema"]
-    mocker.patch(
-        "openfoodfacts_exports.exports.csv.food.requests.get", return_value=response
-    )
-    with pytest.raises(ValueError, match="Invalid taxonomy"):
-        load_english_names()
-    assert list((tmp_path / "taxonomies").iterdir()) == []
 
 
 def test_missing_cells_skip_formatting(mocker):

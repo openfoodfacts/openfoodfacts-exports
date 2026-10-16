@@ -2,7 +2,6 @@
 
 import csv
 import gzip
-import json
 import logging
 import shutil
 import tempfile
@@ -10,9 +9,11 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-import requests
 import zstandard
+from openfoodfacts import Flavor
 from openfoodfacts.images import generate_image_url
+from openfoodfacts.taxonomy import get_taxonomy
+from openfoodfacts.types import TaxonomyType
 from openfoodfacts.utils import jsonl_iter
 
 from openfoodfacts_exports import settings
@@ -40,64 +41,45 @@ DATETIME_COLUMNS = {
 NUTRIENT_COLUMNS = tuple(
     column for column in FOOD_CSV_COLUMNS if column.endswith("_100g")
 )
-TAXONOMY_FILES = {
-    "packaging": "packaging.full.json",
-    "categories": "categories.full.json",
-    "origins": "origins.full.json",
-    "labels": "labels.full.json",
-    "countries": "countries.full.json",
-    "allergens": "allergens.full.json",
-    "traces": "allergens.full.json",
-    "additives": "additives.json",
-    "food_groups": "food_groups.full.json",
-    "states": "states.full.json",
+TAXONOMY_TYPES = {
+    "packaging": TaxonomyType.packaging,
+    "categories": TaxonomyType.category,
+    "origins": TaxonomyType.origin,
+    "labels": TaxonomyType.label,
+    "countries": TaxonomyType.country,
+    "allergens": TaxonomyType.allergen,
+    "traces": TaxonomyType.allergen,
+    "additives": TaxonomyType.additive,
+    "states": TaxonomyType.state,
+    "food_groups": TaxonomyType.food_group,
 }
-TAXONOMY_FIELDS = tuple(TAXONOMY_FILES)
+TAXONOMY_FIELDS = tuple(TAXONOMY_TYPES)
 LOCALIZED_FIELDS = (*TAXONOMY_FIELDS, "brands")
 
 
-def _load_taxonomy_names(filename: str) -> dict[str, str]:
-    """Read one taxonomy, caching validated downloads atomically."""
-    cache = settings.DATASET_DIR / "taxonomies"
-    cache.mkdir(exist_ok=True)
-    path = cache / filename
-    response = None
-    if path.exists():
-        taxonomy = json.loads(path.read_text(encoding="utf-8"))
-    else:
-        response = requests.get(
-            f"https://static.openfoodfacts.org/data/taxonomies/{path.name}",
-            headers={"User-Agent": settings.USER_AGENT},
-            timeout=60,
-        )
-        response.raise_for_status()
-        taxonomy = response.json()
-    if not isinstance(taxonomy, dict) or any(
-        not isinstance(data, dict) or not isinstance(data.get("name", {}), dict)
-        for data in taxonomy.values()
-    ):
-        raise ValueError(f"Invalid taxonomy response for {path.name}")
-    names = {
-        tag: data.get("name", {}).get("en") or data.get("name", {}).get("xx") or tag
-        for tag, data in taxonomy.items()
-    }
-    if response is not None:
-        with tempfile.TemporaryDirectory(dir=path.parent) as temp_dir:
-            temporary = Path(temp_dir) / path.name
-            temporary.write_bytes(response.content)
-            temporary.replace(path)
-    return names
+def _load_sdk_taxonomy_names(taxonomy_type: TaxonomyType) -> dict[str, str]:
+    """Load taxonomy names through the SDK's ETag-aware cache."""
+    taxonomy = get_taxonomy(
+        taxonomy_type,
+        flavor=Flavor.off,
+        download_newer=True,
+        cache_dir=settings.DATASET_DIR / "taxonomies",
+    )
+    return {tag: taxonomy.get_localized_name(tag, "en") for tag in taxonomy.keys()}
 
 
 def load_english_names() -> dict[str, dict[str, str]]:
-    """Load display names once per taxonomy; traces share the allergen names."""
-    names_by_file = {
-        filename: _load_taxonomy_names(filename)
-        for filename in dict.fromkeys(TAXONOMY_FILES.values())
+    """Load English names with SDK caching; traces share the allergen taxonomy."""
+    # Deduplicate aliases such as traces/allergens so each taxonomy loads once.
+    names_by_type = {
+        taxonomy_type: _load_sdk_taxonomy_names(taxonomy_type)
+        for taxonomy_type in set(TAXONOMY_TYPES.values())
     }
-    return {
-        field: names_by_file[filename] for field, filename in TAXONOMY_FILES.items()
+    names = {
+        field: names_by_type[taxonomy_type]
+        for field, taxonomy_type in TAXONOMY_TYPES.items()
     }
+    return names
 
 
 def format_value(value) -> str:
@@ -120,7 +102,7 @@ def localized_tags(product: dict, field: str, names: dict) -> str:
     return ",".join(names.get(field, {}).get(tag, tag) for tag in tags)
 
 
-def image_urls(product: dict) -> dict[str, str]:
+def generate_image_urls(product: dict) -> dict[str, str]:
     result = {}
     images = product.get("images") or {}
     for kind in ("front", "ingredients", "nutrition"):
@@ -148,7 +130,7 @@ def image_urls(product: dict) -> dict[str, str]:
     return result
 
 
-def format_datetime(timestamp) -> str:
+def format_datetime(timestamp: int | float | str | None) -> str:
     if not timestamp:
         return ""
     seconds = float(timestamp)
@@ -178,7 +160,7 @@ def product_to_row(product: dict, names: dict) -> list[str]:
         raise ValueError("Product is empty or has no valid barcode")
 
     # Prepare the derived values once, then serialize in the fixed header order.
-    values = {**product, **image_urls(product), **nutrient_values(product)}
+    values = {**product, **generate_image_urls(product), **nutrient_values(product)}
     values["url"] = f"https://world-en.openfoodfacts.org/product/{code}"
     categories = product.get("categories_tags") or []
     main_category = categories[-1] if categories else ""
@@ -214,7 +196,14 @@ def export_food_csv(
     output_path: Path,
     names: dict[str, dict[str, str]] | None = None,
 ) -> ExportStats:
-    """Write a validated plain TSV once for both compression jobs."""
+    """Write a validated plain TSV once for both compression jobs.
+
+    Args:
+        dataset_path: Path to the gzipped JSONL product dataset.
+        output_path: Path where the plain tab-separated CSV is written.
+        names: Optional taxonomy-name maps, keyed by field and taxonomy tag.
+            English taxonomy names are loaded when omitted.
+    """
     if not dataset_path.is_file():
         raise FileNotFoundError(dataset_path)
     if names is None:
@@ -287,7 +276,7 @@ def cleanup_food_csv(csv_path: Path) -> None:
     csv_path.unlink(missing_ok=True)
 
 
-def upload_food_csv(data_path: Path = FOOD_CSV_PATH) -> None:
+def upload_food_csv(data_path: Path) -> None:
     """Upload the completed export independently of conversion."""
     content_types = {".gz": "application/gzip", ".zst": "application/zstd"}
     if data_path.suffix not in content_types:
