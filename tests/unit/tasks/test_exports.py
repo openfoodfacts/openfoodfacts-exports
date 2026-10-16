@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from openfoodfacts import Flavor
+from rq.job import Dependency
 
 from openfoodfacts_exports import settings, tasks
 from openfoodfacts_exports.types import ExportFlavor
@@ -10,7 +11,7 @@ from openfoodfacts_exports.types import ExportFlavor
 @pytest.mark.parametrize("flavor", [ExportFlavor.off, ExportFlavor.obf])
 def test_product_upload_depends_on_conversion(mocker, flavor):
     mocker.patch.object(tasks, "get_dataset", return_value=Path("input.jsonl"))
-    jobs = [mocker.Mock() for _ in range(9)]
+    jobs = [f"job-{index}" for index in range(9)]
     enqueue = mocker.patch.object(tasks.high_queue, "enqueue", side_effect=jobs)
     tasks.export_job(flavor)
     conversion, upload = enqueue.call_args_list[:2]
@@ -38,7 +39,10 @@ def test_product_upload_depends_on_conversion(mocker, flavor):
             assert call.args == (function, plain_path, output_path)
             assert call.kwargs["depends_on"] is jobs[2]
         assert cleanup.args == (tasks.cleanup_food_csv, plain_path)
-        assert cleanup.kwargs["depends_on"] == [jobs[3], jobs[4]]
+        dependency = cleanup.kwargs["depends_on"]
+        assert isinstance(dependency, Dependency)
+        assert dependency.dependencies == [jobs[3], jobs[4]]
+        assert dependency.allow_failure is True
         for call, dependency, output_path in (
             (gzip_upload, jobs[3], tasks.FOOD_CSV_PATH),
             (zstd_upload, jobs[4], tasks.FOOD_CSV_ZSTD_PATH),
@@ -91,7 +95,9 @@ def test_upload_disabled(monkeypatch, mocker):
 
 def test_plain_csv_path_is_unique_per_run(mocker):
     mocker.patch.object(tasks, "get_dataset", return_value=Path("input.jsonl"))
-    enqueue = mocker.patch.object(tasks.high_queue, "enqueue")
+    enqueue = mocker.patch.object(
+        tasks.high_queue, "enqueue", side_effect=[f"job-{i}" for i in range(18)]
+    )
     tasks.export_job(ExportFlavor.off)
     tasks.export_job(ExportFlavor.off)
     plain_paths = [

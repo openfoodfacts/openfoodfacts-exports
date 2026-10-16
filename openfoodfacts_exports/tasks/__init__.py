@@ -3,6 +3,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from rq import Retry
+from rq.job import Dependency
 
 from openfoodfacts_exports import settings
 from openfoodfacts_exports.exports.parquet.common import push_parquet_file_to_hf
@@ -92,7 +93,9 @@ def export_job(export_flavor: ExportFlavor) -> None:
             high_queue.enqueue(
                 cleanup_food_csv,
                 plain_path,
-                depends_on=[gzip_job, zstd_job],
+                depends_on=Dependency(
+                    jobs=[gzip_job, zstd_job], allow_failure=True
+                ),
                 job_timeout="5m",
             )
             for compression_job, output_path in (
