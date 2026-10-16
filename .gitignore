@@ -24,3 +24,7 @@ hf-token
 # sample database
 *.parquet
 *.db
+
+# Local export files and downloaded taxonomy caches
+/datasets/*
+!/datasets/.gitkeep
