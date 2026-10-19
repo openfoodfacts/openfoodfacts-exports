@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.12.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.11.0...v0.12.0) (2026-10-19)
+
+
+### Features
+
+* add fr CSV export ([#105](https://github.com/openfoodfacts/openfoodfacts-exports/issues/105)) ([97cefb4](https://github.com/openfoodfacts/openfoodfacts-exports/commit/97cefb457d51506bd360f9ce01477abb7e1689bf))
+* export streaming food CSV with gzip and Zstandard ([#97](https://github.com/openfoodfacts/openfoodfacts-exports/issues/97)) ([5bd2c7f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/5bd2c7f171e9b0fff2f5a8de347d3d92fc0e8707))
+
+
+### Bug Fixes
+
+* fix unit test ([3224587](https://github.com/openfoodfacts/openfoodfacts-exports/commit/3224587c8883cdf6998faffccc26c1e7d28f4207))
+* turn a warning log message into debug ([c8375f5](https://github.com/openfoodfacts/openfoodfacts-exports/commit/c8375f5fe58cf626b1d7a393abc3063ec523a03b))
+* validate Parquet exports and retry uploads separately ([#96](https://github.com/openfoodfacts/openfoodfacts-exports/issues/96)) ([c098643](https://github.com/openfoodfacts/openfoodfacts-exports/commit/c098643f6f14bb1fa6fa2a4192d870933077a1d9))
+
 ## [0.11.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.10.0...v0.11.0) (2026-10-14)
 
 
