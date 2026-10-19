@@ -11,7 +11,7 @@ from openfoodfacts_exports.types import ExportFlavor
 @pytest.mark.parametrize("flavor", [ExportFlavor.off, ExportFlavor.obf])
 def test_product_upload_depends_on_conversion(mocker, flavor):
     mocker.patch.object(tasks, "get_dataset", return_value=Path("input.jsonl"))
-    jobs = [f"job-{index}" for index in range(9)]
+    jobs = [f"job-{index}" for index in range(18)]
     enqueue = mocker.patch.object(tasks.high_queue, "enqueue", side_effect=jobs)
     tasks.export_job(flavor)
     conversion, upload = enqueue.call_args_list[:2]
@@ -23,31 +23,58 @@ def test_product_upload_depends_on_conversion(mocker, flavor):
     assert upload.kwargs["depends_on"] is jobs[0]
     assert upload.kwargs["retry"].max == 3
     if flavor == ExportFlavor.off:
-        plain, gzip_job, zstd_job, cleanup, gzip_upload, zstd_upload, mobile = (
-            enqueue.call_args_list[2:]
-        )
-        assert plain.args[0] is tasks.export_food_csv
-        assert plain.args[1] == conversion.args[1]
-        plain_path = plain.args[2]
+        (
+            plain_en,
+            gzip_en_job,
+            zstd_en_job,
+            cleanup_en,
+            gzip_en_upload,
+            zstd_en_upload,
+            plain_fr,
+            gzip_fr_job,
+            zstd_fr_job,
+            cleanup_fr,
+            gzip_fr_upload,
+            zstd_fr_upload,
+            mobile,
+        ) = enqueue.call_args_list[2:]
+        assert plain_en.args[0] is tasks.export_food_csv
+        assert plain_en.args[1] == conversion.args[1]
+        plain_path = plain_en.args[2]
         assert plain_path.parent == settings.DATASET_DIR
         assert plain_path.name.startswith("food-") and plain_path.suffix == ".csv"
-        assert "depends_on" not in plain.kwargs
-        for call, function, output_path in (
-            (gzip_job, tasks.compress_food_csv_gzip, tasks.FOOD_CSV_PATH),
-            (zstd_job, tasks.compress_food_csv_zstd, tasks.FOOD_CSV_ZSTD_PATH),
+        assert "depends_on" not in plain_en.kwargs
+        for call, function, output_filename in (
+            (
+                gzip_en_job,
+                tasks.compress_food_csv_gzip,
+                "en.openfoodfacts.org.products.csv.gz",
+            ),
+            (
+                zstd_en_job,
+                tasks.compress_food_csv_zstd,
+                "en.openfoodfacts.org.products.csv.zst",
+            ),
         ):
-            assert call.args == (function, plain_path, output_path)
+            assert call.args == (
+                function,
+                plain_path,
+                settings.DATASET_DIR / output_filename,
+            )
             assert call.kwargs["depends_on"] is jobs[2]
-        assert cleanup.args == (tasks.cleanup_food_csv, plain_path)
-        dependency = cleanup.kwargs["depends_on"]
+        assert cleanup_en.args == (tasks.cleanup_food_csv, plain_path)
+        dependency = cleanup_en.kwargs["depends_on"]
         assert isinstance(dependency, Dependency)
         assert dependency.dependencies == [jobs[3], jobs[4]]
         assert dependency.allow_failure is True
-        for call, dependency, output_path in (
-            (gzip_upload, jobs[3], tasks.FOOD_CSV_PATH),
-            (zstd_upload, jobs[4], tasks.FOOD_CSV_ZSTD_PATH),
+        for call, dependency, output_filename in (
+            (gzip_en_upload, jobs[3], "en.openfoodfacts.org.products.csv.gz"),
+            (zstd_en_upload, jobs[4], "en.openfoodfacts.org.products.csv.zst"),
         ):
-            assert call.args == (tasks.upload_food_csv, output_path)
+            assert call.args == (
+                tasks.upload_food_csv,
+                settings.DATASET_DIR / output_filename,
+            )
             assert call.kwargs["depends_on"] is dependency
             assert call.kwargs["retry"].max == 3
         assert mobile.args[0] is tasks.generate_push_mobile_app_dump
@@ -96,7 +123,7 @@ def test_upload_disabled(monkeypatch, mocker):
 def test_plain_csv_path_is_unique_per_run(mocker):
     mocker.patch.object(tasks, "get_dataset", return_value=Path("input.jsonl"))
     enqueue = mocker.patch.object(
-        tasks.high_queue, "enqueue", side_effect=[f"job-{i}" for i in range(18)]
+        tasks.high_queue, "enqueue", side_effect=[f"job-{i}" for i in range(36)]
     )
     tasks.export_job(ExportFlavor.off)
     tasks.export_job(ExportFlavor.off)
@@ -105,5 +132,5 @@ def test_plain_csv_path_is_unique_per_run(mocker):
         for call in enqueue.call_args_list
         if call.args[0] is tasks.export_food_csv
     ]
-    assert len(plain_paths) == 2
-    assert plain_paths[0] != plain_paths[1]
+    assert len(plain_paths) == 4
+    assert len(set(plain_paths)) == 4

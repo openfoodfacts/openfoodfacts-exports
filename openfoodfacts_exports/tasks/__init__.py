@@ -2,12 +2,6 @@ import logging
 from pathlib import Path
 from uuid import uuid4
 
-from rq import Retry
-from rq.job import Dependency
-
-from openfoodfacts_exports import settings
-from openfoodfacts_exports.exports.parquet.common import push_parquet_file_to_hf
-
 from openfoodfacts import Flavor, get_dataset
 from openfoodfacts.dataset import DEFAULT_CACHE_DIR
 from openfoodfacts.types import DatasetType
@@ -15,18 +9,20 @@ from openfoodfacts.utils import (
     download_file,
     should_download_file,
 )
+from rq import Retry
+from rq.job import Dependency
 
+from openfoodfacts_exports import settings
 from openfoodfacts_exports.exports.csv.food import (
-    FOOD_CSV_PATH,
-    FOOD_CSV_ZSTD_PATH,
-    export_food_csv,
+    cleanup_food_csv,
     compress_food_csv_gzip,
     compress_food_csv_zstd,
-    cleanup_food_csv,
+    export_food_csv,
     upload_food_csv,
 )
 from openfoodfacts_exports.exports.csv.mobile import generate_push_mobile_app_dump
 from openfoodfacts_exports.exports.parquet import PARQUET_DATASET_PATH, export_parquet
+from openfoodfacts_exports.exports.parquet.common import push_parquet_file_to_hf
 from openfoodfacts_exports.exports.parquet.price import PRICE_DATASET_PATH
 from openfoodfacts_exports.exports.parquet.price import (
     export_parquet as export_price_parquet,
@@ -69,46 +65,52 @@ def export_job(export_flavor: ExportFlavor) -> None:
         )
 
         if flavor is Flavor.off:
-            plain_path = settings.DATASET_DIR / f"food-{uuid4().hex}.csv"
-            csv_job = high_queue.enqueue(
-                export_food_csv,
-                dataset_path,
-                plain_path,
-                job_timeout="3h",
-            )
-            gzip_job = high_queue.enqueue(
-                compress_food_csv_gzip,
-                plain_path,
-                FOOD_CSV_PATH,
-                depends_on=csv_job,
-                job_timeout="3h",
-            )
-            zstd_job = high_queue.enqueue(
-                compress_food_csv_zstd,
-                plain_path,
-                FOOD_CSV_ZSTD_PATH,
-                depends_on=csv_job,
-                job_timeout="3h",
-            )
-            high_queue.enqueue(
-                cleanup_food_csv,
-                plain_path,
-                depends_on=Dependency(
-                    jobs=[gzip_job, zstd_job], allow_failure=True
-                ),
-                job_timeout="5m",
-            )
-            for compression_job, output_path in (
-                (gzip_job, FOOD_CSV_PATH),
-                (zstd_job, FOOD_CSV_ZSTD_PATH),
-            ):
-                high_queue.enqueue(
-                    upload_food_csv,
-                    output_path,
-                    depends_on=compression_job,
-                    retry=Retry(max=3),
-                    job_timeout="1h",
+            for lang in ("en", "fr"):
+                plain_path = settings.DATASET_DIR / f"food-{lang}-{uuid4().hex}.csv"
+                csv_job = high_queue.enqueue(
+                    export_food_csv,
+                    dataset_path,
+                    plain_path,
+                    lang=lang,
+                    job_timeout="3h",
                 )
+                lang_gzip_csv_path = (
+                    settings.DATASET_DIR / f"{lang}.openfoodfacts.org.products.csv.gz"
+                )
+                gzip_job = high_queue.enqueue(
+                    compress_food_csv_gzip,
+                    plain_path,
+                    lang_gzip_csv_path,
+                    depends_on=csv_job,
+                    job_timeout="3h",
+                )
+                lang_zstd_csv_path = lang_gzip_csv_path.with_suffix(".zst")
+                zstd_job = high_queue.enqueue(
+                    compress_food_csv_zstd,
+                    plain_path,
+                    lang_zstd_csv_path,
+                    depends_on=csv_job,
+                    job_timeout="3h",
+                )
+                high_queue.enqueue(
+                    cleanup_food_csv,
+                    plain_path,
+                    depends_on=Dependency(
+                        jobs=[gzip_job, zstd_job], allow_failure=True
+                    ),
+                    job_timeout="5m",
+                )
+                for compression_job, output_path in (
+                    (gzip_job, lang_gzip_csv_path),
+                    (zstd_job, lang_zstd_csv_path),
+                ):
+                    high_queue.enqueue(
+                        upload_food_csv,
+                        output_path,
+                        depends_on=compression_job,
+                        retry=Retry(max=3),
+                        job_timeout="1h",
+                    )
             high_queue.enqueue(
                 generate_push_mobile_app_dump,
                 PARQUET_DATASET_PATH[flavor],
