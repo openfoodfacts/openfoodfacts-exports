@@ -6,7 +6,7 @@ x-app-dev: &app-dev
       args:
         OFF_UID: ${OFF_UID:-1000}
         OFF_GID: ${OFF_GID:-1000}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
     volumes:
       # make updates to code available
       - ./openfoodfacts_exports:/app/openfoodfacts_exports
