@@ -18,6 +18,12 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 # Fraction of rejected products allowed before blocking an export (default: 50%).
 MAX_EXPORT_REJECTION_RATE = float(os.getenv("MAX_EXPORT_REJECTION_RATE", "0.5"))
 
+# Gzip compression level for the full food CSV export (0–9).
+CSV_GZIP_COMPRESSION_LEVEL = int(os.getenv("CSV_GZIP_COMPRESSION_LEVEL", "9"))
+
+# Favor smaller Zstandard CSV exports; valid levels are 1–22.
+CSV_ZSTD_COMPRESSION_LEVEL = int(os.getenv("CSV_ZSTD_COMPRESSION_LEVEL", "19"))
+
 ENABLE_HF_PUSH = int(os.getenv("ENABLE_HF_PUSH", "0"))
 
 ENABLE_S3_PUSH = int(os.getenv("ENABLE_S3_PUSH", "0"))
