@@ -11,7 +11,7 @@ from openfoodfacts_exports.exports.csv.columns import FOOD_CSV_COLUMNS
 from openfoodfacts_exports.exports.csv.food import (
     export_food_csv,
     generate_image_urls,
-    load_english_names,
+    load_names,
     product_to_row,
     upload_food_csv,
 )
@@ -150,7 +150,7 @@ def test_csv_quality_and_previous_file(tmp_path, monkeypatch, records, passes):
 
 
 def test_csv_missing_source(tmp_path, mocker):
-    load = mocker.patch("openfoodfacts_exports.exports.csv.food.load_english_names")
+    load = mocker.patch("openfoodfacts_exports.exports.csv.food.load_names")
     with pytest.raises(FileNotFoundError):
         export_food_csv(tmp_path / "missing", tmp_path / "output.csv.gz")
     load.assert_not_called()
@@ -175,7 +175,7 @@ def test_taxonomy_names_use_sdk(tmp_path, monkeypatch, mocker):
         "openfoodfacts_exports.exports.csv.food.get_taxonomy",
         return_value=taxonomy,
     )
-    names = load_english_names()
+    names = load_names("en")
     assert names["countries"]["en:france"] == "France"
     assert names["countries"]["xx:test"] == "International"
     assert names["countries"]["fr:unknown"] == "fr:unknown"
@@ -214,7 +214,7 @@ def test_taxonomy_download_error_propagates(tmp_path, monkeypatch, mocker):
         side_effect=requests.HTTPError("download failed"),
     )
     with pytest.raises(requests.HTTPError):
-        load_english_names()
+        load_names("en")
     get_taxonomy.assert_called_once()
     assert not (tmp_path / "taxonomies").exists()
 
@@ -254,7 +254,7 @@ def test_invalid_gzip_level_preserves_output(tmp_path, monkeypatch, mocker, leve
     source.write_text('{"code":"123"}\n')
     output = tmp_path / "food.csv.gz"
     output.write_bytes(b"previous export")
-    load = mocker.patch("openfoodfacts_exports.exports.csv.food.load_english_names")
+    load = mocker.patch("openfoodfacts_exports.exports.csv.food.load_names")
     with pytest.raises(ValueError, match="compression level"):
         food.compress_food_csv_gzip(source, output)
     load.assert_not_called()

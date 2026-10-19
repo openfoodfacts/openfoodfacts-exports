@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
+import tqdm
 import zstandard
 from openfoodfacts import Flavor
 from openfoodfacts.images import generate_image_url
@@ -23,8 +24,7 @@ from openfoodfacts_exports.utils import get_minio_client
 from .columns import FOOD_CSV_COLUMNS
 
 logger = logging.getLogger(__name__)
-FOOD_CSV_PATH = settings.DATASET_DIR / "en.openfoodfacts.org.products.csv.gz"
-FOOD_CSV_ZSTD_PATH = FOOD_CSV_PATH.with_suffix(".zst")
+
 LANGUAGE_FIELDS = {
     "product_name",
     "abbreviated_product_name",
@@ -57,7 +57,7 @@ TAXONOMY_FIELDS = tuple(TAXONOMY_TYPES)
 LOCALIZED_FIELDS = (*TAXONOMY_FIELDS, "brands")
 
 
-def _load_sdk_taxonomy_names(taxonomy_type: TaxonomyType) -> dict[str, str]:
+def _load_sdk_taxonomy_names(taxonomy_type: TaxonomyType, lang: str) -> dict[str, str]:
     """Load taxonomy names through the SDK's ETag-aware cache."""
     taxonomy = get_taxonomy(
         taxonomy_type,
@@ -65,14 +65,15 @@ def _load_sdk_taxonomy_names(taxonomy_type: TaxonomyType) -> dict[str, str]:
         download_newer=True,
         cache_dir=settings.DATASET_DIR / "taxonomies",
     )
-    return {tag: taxonomy.get_localized_name(tag, "en") for tag in taxonomy.keys()}
+    return {tag: taxonomy.get_localized_name(tag, lang) for tag in taxonomy.keys()}
 
 
-def load_english_names() -> dict[str, dict[str, str]]:
-    """Load English names with SDK caching; traces share the allergen taxonomy."""
+def load_names(lang: str) -> dict[str, dict[str, str]]:
+    """Load names in a specific language with SDK caching; traces share the allergen
+    taxonomy."""
     # Deduplicate aliases such as traces/allergens so each taxonomy loads once.
     names_by_type = {
-        taxonomy_type: _load_sdk_taxonomy_names(taxonomy_type)
+        taxonomy_type: _load_sdk_taxonomy_names(taxonomy_type, lang)
         for taxonomy_type in set(TAXONOMY_TYPES.values())
     }
     names = {
@@ -195,6 +196,7 @@ def export_food_csv(
     dataset_path: Path,
     output_path: Path,
     names: dict[str, dict[str, str]] | None = None,
+    lang: str | None = None,
 ) -> ExportStats:
     """Write a validated plain TSV once for both compression jobs.
 
@@ -203,12 +205,15 @@ def export_food_csv(
         output_path: Path where the plain tab-separated CSV is written.
         names: Optional taxonomy-name maps, keyed by field and taxonomy tag.
             English taxonomy names are loaded when omitted.
+        lang: the language used to load the names from taxonomy. If None,
+            "en" is used unless `names` is provided.
     """
     if not dataset_path.is_file():
         raise FileNotFoundError(dataset_path)
     if names is None:
-        names = load_english_names()
+        names = load_names(lang or "en")
 
+    logger.info("Exporting CSV dump from %s to %s", dataset_path, output_path)
     stats = ExportStats()
     with tempfile.TemporaryDirectory(dir=output_path.parent) as temp_dir:
         temporary = Path(temp_dir) / output_path.name
@@ -216,7 +221,7 @@ def export_food_csv(
             writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
 
             writer.writerow(FOOD_CSV_COLUMNS)
-            for product in jsonl_iter(dataset_path):
+            for product in tqdm.tqdm(jsonl_iter(dataset_path), desc="products"):
                 stats.records_read += 1
                 try:
                     row = product_to_row(product, names)
@@ -237,10 +242,7 @@ def export_food_csv(
     return stats
 
 
-def compress_food_csv_gzip(
-    csv_path: Path,
-    output_path: Path = FOOD_CSV_PATH,
-) -> None:
+def compress_food_csv_gzip(csv_path: Path, output_path: Path) -> None:
     """Compress the validated plain CSV without repeating row mapping."""
     level = settings.CSV_GZIP_COMPRESSION_LEVEL
     if not 0 <= level <= 9:
@@ -255,10 +257,7 @@ def compress_food_csv_gzip(
         temporary.replace(output_path)
 
 
-def compress_food_csv_zstd(
-    csv_path: Path,
-    output_path: Path = FOOD_CSV_ZSTD_PATH,
-) -> None:
+def compress_food_csv_zstd(csv_path: Path, output_path: Path) -> None:
     """Compress the validated plain CSV using bounded Zstandard buffers."""
     level = settings.CSV_ZSTD_COMPRESSION_LEVEL
     if not 1 <= level <= 22:
