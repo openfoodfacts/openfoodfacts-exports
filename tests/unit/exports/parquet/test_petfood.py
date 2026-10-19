@@ -148,7 +148,7 @@ class TestPetFoodProduct:
                 {"code": "123", "schema_version": 1004, "nutrition": nutrition}
             )
         assert output["nutriments"] is None
-        assert [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert [r for r in caplog.records if r.levelno == logging.DEBUG]
 
     def test_numeric_ingredient_quantity(self):
         product = PetFoodProduct(
