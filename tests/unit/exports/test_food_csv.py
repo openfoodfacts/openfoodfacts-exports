@@ -191,6 +191,7 @@ def test_taxonomy_names_use_sdk(tmp_path, monkeypatch, mocker):
 @pytest.mark.parametrize("enabled", [0, 1])
 def test_csv_upload_setting(monkeypatch, mocker, enabled):
     monkeypatch.setattr(settings, "ENABLE_S3_PUSH", enabled)
+    monkeypatch.setattr(settings, "ENABLE_CSV_PUSH", enabled)
     client = mocker.patch("openfoodfacts_exports.exports.csv.food.get_minio_client")
     output = Path("food.csv.gz")
     upload_food_csv(output)
@@ -333,6 +334,7 @@ def test_shared_plain_export_and_cleanup(tmp_path):
 
 def test_zstd_upload_content_type(monkeypatch, mocker):
     monkeypatch.setattr(settings, "ENABLE_S3_PUSH", 1)
+    monkeypatch.setattr(settings, "ENABLE_CSV_PUSH", 1)
     client = mocker.patch.object(food, "get_minio_client")
     output = Path("en.openfoodfacts.org.products.csv.zst")
     upload_food_csv(output)

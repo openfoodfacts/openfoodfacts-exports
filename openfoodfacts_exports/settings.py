@@ -28,6 +28,8 @@ ENABLE_HF_PUSH = int(os.getenv("ENABLE_HF_PUSH", "0"))
 
 ENABLE_S3_PUSH = int(os.getenv("ENABLE_S3_PUSH", "0"))
 
+ENABLE_CSV_PUSH = int(os.getenv("ENABLE_CSV_PUSH", "0"))
+
 AWS_S3_DATASET_BUCKET = os.getenv("AWS_S3_DATASET_BUCKET", "openfoodfacts-ds")
 AWS_S3_IMAGE_BUCKET = os.getenv("AWS_S3_IMAGE_BUCKET", "openfoodfacts-images")
 AWS_S3_REVISION_BUCKET = os.getenv(

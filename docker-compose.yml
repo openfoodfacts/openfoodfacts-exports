@@ -17,6 +17,7 @@ x-service-base-env: &service-base-env
   REDIS_UPDATE_PORT:
   ENABLE_HF_PUSH:
   ENABLE_S3_PUSH:
+  ENABLE_CSV_PUSH:
   HF_TOKEN: # Hugging Face token to push to the dataset hub
   AWS_ACCESS_KEY:
   AWS_SECRET_KEY:

@@ -283,6 +283,9 @@ def upload_food_csv(data_path: Path) -> None:
     if not settings.ENABLE_S3_PUSH:
         logger.info("S3 push is disabled, skipping CSV upload")
         return
+    if not settings.ENABLE_CSV_PUSH:
+        logger.info("CSV push is disabled, skipping CSV upload")
+        return
     get_minio_client().fput_object(
         settings.AWS_S3_DATASET_BUCKET,
         data_path.name,

@@ -40,6 +40,7 @@ jobs:
           echo "ENVIRONMENT=prod" >> $GITHUB_ENV
           echo "ENABLE_HF_PUSH=1" >> $GITHUB_ENV
           echo "ENABLE_S3_PUSH=1" >> $GITHUB_ENV
+          echo "ENABLE_CSV_PUSH=0" >> $GITHUB_ENV
           # deploy target
           echo "SSH_PROXY_HOST=45.147.209.254" >> $GITHUB_ENV
           echo "SSH_USERNAME=off" >> $GITHUB_ENV
