@@ -29,6 +29,7 @@ jobs:
           echo "ENVIRONMENT=preprod" >> $GITHUB_ENV
           echo "ENABLE_HF_PUSH=0" >> $GITHUB_ENV
           echo "ENABLE_S3_PUSH=0" >> $GITHUB_ENV
+          echo "ENABLE_CSV_PUSH=0" >> $GITHUB_ENV
           # deploy target
           echo "SSH_PROXY_HOST=ovh1.openfoodfacts.org" >> $GITHUB_ENV
           echo "SSH_USERNAME=off" >> $GITHUB_ENV
@@ -44,7 +45,7 @@ jobs:
           echo "ENVIRONMENT=prod" >> $GITHUB_ENV
           echo "ENABLE_HF_PUSH=1" >> $GITHUB_ENV
           echo "ENABLE_S3_PUSH=1" >> $GITHUB_ENV
-          echo "ENABLE_CSV_PUSH=0" >> $GITHUB_ENV
+          echo "ENABLE_CSV_PUSH=1" >> $GITHUB_ENV
           # deploy target
           echo "SSH_PROXY_HOST=45.147.209.254" >> $GITHUB_ENV
           echo "SSH_USERNAME=off" >> $GITHUB_ENV
@@ -138,6 +139,7 @@ jobs:
             echo "NUM_RQ_WORKERS=4" >> .env
             echo "ENABLE_HF_PUSH=${{ env.ENABLE_HF_PUSH }}" >> .env
             echo "ENABLE_S3_PUSH=${{ env.ENABLE_S3_PUSH }}" >> .env
+            echo "ENABLE_CSV_PUSH=${{ env.ENABLE_CSV_PUSH }}" >> .env
 
             # Secrets
             echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
