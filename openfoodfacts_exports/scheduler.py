@@ -46,7 +46,7 @@ def run() -> None:
     scheduler = BlockingScheduler(timezone=pytz.utc)
     scheduler.add_executor(ThreadPoolExecutor(10))
     scheduler.add_jobstore(MemoryJobStore())
-    scheduler.add_job(export_datasets, "cron", hour=16, minute=0, max_instances=1)
+    scheduler.add_job(export_datasets, "cron", hour=8, minute=0, max_instances=1)
     scheduler.add_job(
         export_historical_events,
         "cron",
