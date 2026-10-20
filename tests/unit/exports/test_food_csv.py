@@ -17,8 +17,8 @@ from openfoodfacts_exports.exports.csv.food import (
 )
 
 
-def as_dict(product, names=None):
-    return dict(zip(FOOD_CSV_COLUMNS, product_to_row(product, names or {})))
+def as_dict(product: dict, names: dict | None = None, lang: str = "en"):
+    return dict(zip(FOOD_CSV_COLUMNS, product_to_row(product, names or {}, lang)))
 
 
 def test_legacy_field_mapping():

@@ -155,18 +155,18 @@ def nutrient_values(product: dict) -> dict:
     }
 
 
-def product_to_row(product: dict, names: dict) -> list[str]:
+def product_to_row(product: dict, names: dict, lang: str) -> list[str]:
     code = product.get("code")
     if not code or not str(code).isdigit() or int(code) == 0 or product.get("empty"):
         raise ValueError("Product is empty or has no valid barcode")
 
     # Prepare the derived values once, then serialize in the fixed header order.
     values = {**product, **generate_image_urls(product), **nutrient_values(product)}
-    values["url"] = f"https://world-en.openfoodfacts.org/product/{code}"
+    values["url"] = f"https://world-{lang}.openfoodfacts.org/product/{code}"
     categories = product.get("categories_tags") or []
     main_category = categories[-1] if categories else ""
     values["main_category"] = main_category
-    values["main_category_en"] = names.get("categories", {}).get(
+    values[f"main_category_{lang}"] = names.get("categories", {}).get(
         main_category, main_category
     )
     values.update(
@@ -176,11 +176,11 @@ def product_to_row(product: dict, names: dict) -> list[str]:
         }
     )
     for field in LOCALIZED_FIELDS:
-        column = f"{field}_en"
+        column = f"{field}_{lang}"
         if product.get(column) is None:
             values[column] = localized_tags(product, field, names)
     for field in LANGUAGE_FIELDS:
-        values[field] = product.get(f"{field}_en") or product.get(field)
+        values[field] = product.get(f"{field}_{lang}") or product.get(field)
     for suffix in ("score", "grade"):
         column = f"environmental_score_{suffix}"
         values[column] = product.get(column, product.get(f"ecoscore_{suffix}"))
@@ -210,8 +210,12 @@ def export_food_csv(
     """
     if not dataset_path.is_file():
         raise FileNotFoundError(dataset_path)
+
+    if lang is None:
+        lang = "en"
+
     if names is None:
-        names = load_names(lang or "en")
+        names = load_names(lang)
 
     logger.info("Exporting CSV dump from %s to %s", dataset_path, output_path)
     stats = ExportStats()
@@ -224,10 +228,10 @@ def export_food_csv(
             for product in tqdm.tqdm(jsonl_iter(dataset_path), desc="products"):
                 stats.records_read += 1
                 try:
-                    row = product_to_row(product, names)
+                    row = product_to_row(product, names, lang)
                 except (ValueError, TypeError, OverflowError, AttributeError) as error:
                     stats.records_rejected += 1
-                    logger.warning(
+                    logger.debug(
                         "CSV rejected product %s: %s",
                         product.get("code", "unknown"),
                         error,
