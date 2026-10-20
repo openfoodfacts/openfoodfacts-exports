@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.13.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.12.0...v0.13.0) (2026-10-20)
+
+
+### Features
+
+* historical events pipeline ([#84](https://github.com/openfoodfacts/openfoodfacts-exports/issues/84)) ([5558be5](https://github.com/openfoodfacts/openfoodfacts-exports/commit/5558be589145182e6bc283adb51e73a6d1682bf3)), closes [#70](https://github.com/openfoodfacts/openfoodfacts-exports/issues/70)
+
+
+### Bug Fixes
+
+* fix localized field name for fr CSV ([#107](https://github.com/openfoodfacts/openfoodfacts-exports/issues/107)) ([01c164f](https://github.com/openfoodfacts/openfoodfacts-exports/commit/01c164f40e7ec5de30304fea7d4f15294f1d9754))
+
+
+### Technical
+
+* align Ruff version ([#104](https://github.com/openfoodfacts/openfoodfacts-exports/issues/104)) ([390e4a5](https://github.com/openfoodfacts/openfoodfacts-exports/commit/390e4a573cfb99839c45e905b4ea8d8a2930c9a8))
+* **deps:** bump urllib3 from 2.2.3 to 2.8.0 ([#100](https://github.com/openfoodfacts/openfoodfacts-exports/issues/100)) ([87cc704](https://github.com/openfoodfacts/openfoodfacts-exports/commit/87cc7041940a5a0bb3cbd717ec23f24f20a56d80))
+* upgrade release please to version 5 ([079a326](https://github.com/openfoodfacts/openfoodfacts-exports/commit/079a32666a2335fd45c05166a98d79eb511d13ac))
+
 ## [0.12.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.11.0...v0.12.0) (2026-10-19)
 
 
