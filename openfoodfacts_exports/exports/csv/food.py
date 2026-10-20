@@ -231,7 +231,7 @@ def export_food_csv(
                     row = product_to_row(product, names, lang)
                 except (ValueError, TypeError, OverflowError, AttributeError) as error:
                     stats.records_rejected += 1
-                    logger.warning(
+                    logger.debug(
                         "CSV rejected product %s: %s",
                         product.get("code", "unknown"),
                         error,
