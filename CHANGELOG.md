@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.13.0...v0.13.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* run dataset export at 8AM (UTC) ([52d1a48](https://github.com/openfoodfacts/openfoodfacts-exports/commit/52d1a48fbb64b2fc8e97fa2436969a5ff4227f48))
+
+
+### Technical
+
+* **deps:** upgrade openfoodfacts-python ([332ff9e](https://github.com/openfoodfacts/openfoodfacts-exports/commit/332ff9e594388500a04ab77064ac27c6a990a1fb))
+* enable CSV push to AWS S3 ([d2be8fc](https://github.com/openfoodfacts/openfoodfacts-exports/commit/d2be8fc978a7edd76ba5162b1d47e0750fdcec33))
+
 ## [0.13.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.12.0...v0.13.0) (2026-10-20)
 
 
