@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.13.1...v0.13.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* delay dataset export at 9AM (UTC) ([7b5d9bc](https://github.com/openfoodfacts/openfoodfacts-exports/commit/7b5d9bcf56343d696091cdc837af49dd8f40df3e))
+
 ## [0.13.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.13.0...v0.13.1) (2026-10-20)
 
 
