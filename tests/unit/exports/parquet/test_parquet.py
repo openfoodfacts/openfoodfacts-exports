@@ -262,6 +262,33 @@ def test_conversion_never_uploads(tmp_path, monkeypatch, mocker, flavor_name):
     upload.assert_not_called()
 
 
+def test_price_conversion_with_missing_proof_and_location(tmp_path):
+    import json
+
+    import pyarrow.parquet as pq
+
+    from openfoodfacts_exports.exports.parquet import price
+
+    price_path = tmp_path / "prices.jsonl"
+    price_path.write_text(
+        json.dumps({"id": 1, "type": "PRODUCT", "proof_id": 10, "location_id": 20})
+        + "\n"
+    )
+    proof_path = tmp_path / "proofs.jsonl"
+    proof_path.write_text("")
+    location_path = tmp_path / "locations.jsonl"
+    location_path.write_text("")
+    output = tmp_path / "prices.parquet"
+
+    price.convert_jsonl_to_parquet(output, price_path, proof_path, location_path)
+
+    (row,) = pq.read_table(output).to_pylist()
+    assert row["proof_id"] == 10
+    assert row["proof_type"] is None
+    assert row["location_id"] == 20
+    assert row["location_type"] is None
+
+
 def test_price_conversion_never_uploads(tmp_path, monkeypatch, mocker):
     from openfoodfacts_exports import settings
     from openfoodfacts_exports.exports.parquet import price
