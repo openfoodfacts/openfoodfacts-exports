@@ -31,8 +31,10 @@ class ProofModel(BaseModel):
     currency: str | None = None
     receipt_price_count: int | None = None
     receipt_price_total: Decimal | None = None
+    receipt_online_delivery_costs: Decimal | None = None
     owner: str | None = None
     source: str | None = None
+    tags: list[str] | None = None
     created: datetime.datetime | None = None
     updated: datetime.datetime | None = None
 
@@ -52,13 +54,18 @@ class LocationModel(BaseModel):
     osm_display_name: str | None = None
     osm_tag_key: str | None = None
     osm_tag_value: str | None = None
+    osm_tags: list[str] | None = None
+    osm_brand: str | None = None
     osm_address_postcode: str | None = None
     osm_address_city: str | None = None
     osm_address_country: str | None = None
     osm_address_country_code: str | None = None
     osm_lat: float | None = None
     osm_lon: float | None = None
+    osm_version: int | None = None
+    osm_version_date: datetime.datetime | None = None
     website_url: str | None = None
+    tags: list[str] | None = None
     source: str | None = None
     created: datetime.datetime | None = None
     updated: datetime.datetime | None = None
@@ -81,6 +88,7 @@ class ProductModel(BaseModel):
     nutriscore_grade: str | None = None
     ecoscore_grade: str | None = None
     nova_group: int | None = None
+    creator: str | None = None
     unique_scans_n: int | None = None
     created: datetime.datetime | None = None
     updated: datetime.datetime | None = None
@@ -109,6 +117,8 @@ class PriceModel(BaseModel):
     receipt_quantity: float | None = None
     owner: str | None = None
     source: str | None = None
+    tags: list[str] | None = None
+    duplicate_of: int | None = None
     created: datetime.datetime | None = None
     updated: datetime.datetime | None = None
 
@@ -143,30 +153,45 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
         pa.field("receipt_quantity", pa.float32(), nullable=True),
         pa.field("owner", pa.string(), nullable=True),
         pa.field("source", pa.string(), nullable=True),
+        pa.field("tags", pa.list_(pa.string()), nullable=True),
+        pa.field("duplicate_of", pa.int64(), nullable=True),
         pa.field("created", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("updated", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("proof_file_path", pa.string(), nullable=True),
         pa.field("proof_mimetype", pa.string(), nullable=True),
         pa.field("proof_type", pa.string(), nullable=True),
+        pa.field("proof_image_thumb_path", pa.string(), nullable=True),
         pa.field("proof_date", pa.date32(), nullable=True),
         pa.field("proof_currency", pa.string(), nullable=True),
         pa.field("proof_receipt_price_count", pa.int32(), nullable=True),
         pa.field("proof_receipt_price_total", pa.decimal128(10, 3), nullable=True),
+        pa.field(
+            "proof_receipt_online_delivery_costs", pa.decimal128(10, 3), nullable=True
+        ),
         pa.field("proof_owner", pa.string(), nullable=True),
         pa.field("proof_source", pa.string(), nullable=True),
+        pa.field("proof_tags", pa.list_(pa.string()), nullable=True),
         pa.field("proof_created", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("proof_updated", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("location_type", pa.string(), nullable=True),
+        pa.field("location_osm_name", pa.string(), nullable=True),
         pa.field("location_osm_display_name", pa.string(), nullable=True),
         pa.field("location_osm_tag_key", pa.string(), nullable=True),
         pa.field("location_osm_tag_value", pa.string(), nullable=True),
+        pa.field("location_osm_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("location_osm_brand", pa.string(), nullable=True),
         pa.field("location_osm_address_postcode", pa.string(), nullable=True),
         pa.field("location_osm_address_city", pa.string(), nullable=True),
         pa.field("location_osm_address_country", pa.string(), nullable=True),
         pa.field("location_osm_address_country_code", pa.string(), nullable=True),
         pa.field("location_osm_lat", pa.float64(), nullable=True),
         pa.field("location_osm_lon", pa.float64(), nullable=True),
+        pa.field("location_osm_version", pa.int32(), nullable=True),
+        pa.field(
+            "location_osm_version_date", pa.timestamp("us", tz="UTC"), nullable=True
+        ),
         pa.field("location_website_url", pa.string(), nullable=True),
+        pa.field("location_tags", pa.list_(pa.string()), nullable=True),
         pa.field("location_source", pa.string(), nullable=True),
         pa.field("location_created", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("location_updated", pa.timestamp("us", tz="UTC"), nullable=True),
@@ -186,6 +211,7 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
         pa.field("product_nutriscore_grade", pa.string(), nullable=True),
         pa.field("product_ecoscore_grade", pa.string(), nullable=True),
         pa.field("product_nova_group", pa.int32(), nullable=True),
+        pa.field("product_creator", pa.string(), nullable=True),
         pa.field("product_unique_scans_n", pa.int32(), nullable=True),
         pa.field("product_created", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("product_updated", pa.timestamp("us", tz="UTC"), nullable=True),
@@ -198,12 +224,15 @@ PROOF_KEYS = [
     "file_path",
     "mimetype",
     "type",
+    "image_thumb_path",
     "date",
     "currency",
     "receipt_price_count",
     "receipt_price_total",
+    "receipt_online_delivery_costs",
     "owner",
     "source",
+    "tags",
     "created",
     "updated",
 ]
@@ -214,16 +243,22 @@ LOCATION_KEYS = [
     "type",
     # "osm_id",  # same as the price location_osm_id
     # "osm_type",  # same as the price location_osm_type
+    "osm_name",
     "osm_display_name",
     "osm_tag_key",
     "osm_tag_value",
+    "osm_tags",
+    "osm_brand",
     "osm_address_postcode",
     "osm_address_city",
     "osm_address_country",
     "osm_address_country_code",
     "osm_lat",
     "osm_lon",
+    "osm_version",
+    "osm_version_date",
     "website_url",
+    "tags",
     "source",
     "created",
     "updated",
@@ -247,6 +282,7 @@ PRODUCT_KEYS = [
     "nutriscore_grade",
     "ecoscore_grade",
     "nova_group",
+    "creator",
     "unique_scans_n",
     "created",
     "updated",
