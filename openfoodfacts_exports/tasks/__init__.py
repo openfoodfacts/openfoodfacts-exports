@@ -120,7 +120,7 @@ def export_job(export_flavor: ExportFlavor) -> None:
 
 
 def export_price_job() -> None:
-    """Download the Open Prices dataset (made of 3 JSONL dumps) and launch the
+    """Download the Open Prices dataset (made of 4 JSONL dumps) and launch the
     Parquet export through a new rq job."""
     logger.info("Start export job for price dataset")
 
@@ -129,6 +129,7 @@ def export_price_job() -> None:
         ("price", "prices.jsonl.gz"),
         ("location", "locations.jsonl.gz"),
         ("proof", "proofs.jsonl.gz"),
+        ("product", "products.jsonl.gz"),
     ):
         dataset_paths[key] = get_price_dataset(file_name, download_newer=True)
 

@@ -279,7 +279,10 @@ def test_price_conversion_never_uploads(tmp_path, monkeypatch, mocker):
     )
     output = tmp_path / "prices.parquet"
     price.export_parquet(
-        {key: tmp_path / f"{key}.jsonl" for key in ("price", "proof", "location")},
+        {
+            key: tmp_path / f"{key}.jsonl"
+            for key in ("price", "proof", "location", "product")
+        },
         output,
     )
     assert output.read_bytes() == b"converted prices"
