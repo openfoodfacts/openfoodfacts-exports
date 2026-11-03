@@ -64,9 +64,32 @@ class LocationModel(BaseModel):
     updated: datetime.datetime | None = None
 
 
+class ProductModel(BaseModel):
+    id: int | None = None
+    code: str | None = None
+    source: str | None = None
+    source_last_synced: datetime.datetime | None = None
+    product_name: str | None = None
+    image_url: str | None = None
+    product_quantity: int | None = None
+    product_quantity_unit: str | None = None
+    quantity: str | None = None
+    categories_tags: list[str] | None = None
+    brands: str | None = None
+    brands_tags: list[str] | None = None
+    labels_tags: list[str] | None = None
+    nutriscore_grade: str | None = None
+    ecoscore_grade: str | None = None
+    nova_group: int | None = None
+    unique_scans_n: int | None = None
+    created: datetime.datetime | None = None
+    updated: datetime.datetime | None = None
+
+
 class PriceModel(BaseModel):
     id: int | None = None
     type: str
+    product_id: int | None = None
     product_code: str | None = None
     product_name: str | None = None
     category_tag: str | None = None
@@ -100,6 +123,7 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
     [
         pa.field("id", pa.int64(), nullable=True),
         pa.field("type", pa.string(), nullable=True),
+        pa.field("product_id", pa.int64(), nullable=True),
         pa.field("product_code", pa.string(), nullable=True),
         pa.field("product_name", pa.string(), nullable=True),
         pa.field("category_tag", pa.string(), nullable=True),
@@ -146,6 +170,25 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
         pa.field("location_source", pa.string(), nullable=True),
         pa.field("location_created", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("location_updated", pa.timestamp("us", tz="UTC"), nullable=True),
+        pa.field("product_source", pa.string(), nullable=True),
+        pa.field(
+            "product_source_last_synced", pa.timestamp("us", tz="UTC"), nullable=True
+        ),
+        pa.field("product_product_name", pa.string(), nullable=True),
+        pa.field("product_image_url", pa.string(), nullable=True),
+        pa.field("product_product_quantity", pa.int64(), nullable=True),
+        pa.field("product_product_quantity_unit", pa.string(), nullable=True),
+        pa.field("product_quantity", pa.string(), nullable=True),
+        pa.field("product_categories_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("product_brands", pa.string(), nullable=True),
+        pa.field("product_brands_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("product_labels_tags", pa.list_(pa.string()), nullable=True),
+        pa.field("product_nutriscore_grade", pa.string(), nullable=True),
+        pa.field("product_ecoscore_grade", pa.string(), nullable=True),
+        pa.field("product_nova_group", pa.int32(), nullable=True),
+        pa.field("product_unique_scans_n", pa.int32(), nullable=True),
+        pa.field("product_created", pa.timestamp("us", tz="UTC"), nullable=True),
+        pa.field("product_updated", pa.timestamp("us", tz="UTC"), nullable=True),
     ]
 )
 
@@ -183,11 +226,33 @@ LOCATION_KEYS = [
 ]
 
 
+PRODUCT_KEYS = [
+    "source",
+    "source_last_synced",
+    "product_name",
+    "image_url",
+    "product_quantity",
+    "product_quantity_unit",
+    "quantity",
+    "categories_tags",
+    "brands",
+    "brands_tags",
+    "labels_tags",
+    "nutriscore_grade",
+    "ecoscore_grade",
+    "nova_group",
+    "unique_scans_n",
+    "created",
+    "updated",
+]
+
+
 def convert_jsonl_to_parquet(
     output_file_path: Path,
     dataset_price_path: Path,
     dataset_proof_path: Path,
     dataset_location_path: Path,
+    dataset_product_path: Path,
     batch_size: int = 1024,
     row_group_size: int = 122_880,  # DuckDB default row group size,
     use_tqdm: bool = False,
@@ -199,6 +264,7 @@ def convert_jsonl_to_parquet(
         dataset_price_path (Path): The path to the `price` JSONL dataset.
         dataset_proof_path (Path): The path to the `proof` JSONL dataset.
         dataset_location_path (Path): The path to the `location` JSONL dataset.
+        dataset_product_path (Path): The path to the `product` JSONL dataset.
         schema (pa.Schema): The schema of the Parquet file.
         dtype_map (dict[str, pa.DataType], optional): A mapping of field names
             to PyArrow data types. Defaults to None.
@@ -222,6 +288,10 @@ def convert_jsonl_to_parquet(
         location["id"]: LocationModel(**location).model_dump()
         for location in jsonl_iter(dataset_location_path)
     }
+    product_by_id = {
+        product["id"]: ProductModel(**product).model_dump()
+        for product in jsonl_iter(dataset_product_path)
+    }
 
     for batch in chunked(item_iter, batch_size):
         prices = []
@@ -233,6 +303,7 @@ def convert_jsonl_to_parquet(
                     list(price.keys())
                     + [f"proof_{key}" for key in PROOF_KEYS]
                     + [f"location_{key}" for key in LOCATION_KEYS]
+                    + [f"product_{key}" for key in PRODUCT_KEYS]
                 )
             for key, store, fk_fields in [
                 (
@@ -244,6 +315,11 @@ def convert_jsonl_to_parquet(
                     "location",
                     location_by_id,
                     LOCATION_KEYS,
+                ),
+                (
+                    "product",
+                    product_by_id,
+                    PRODUCT_KEYS,
                 ),
             ]:
                 if price[f"{key}_id"] is not None:
@@ -292,6 +368,7 @@ def export_parquet(
             dataset_price_path=dataset_paths["price"],
             dataset_proof_path=dataset_paths["proof"],
             dataset_location_path=dataset_paths["location"],
+            dataset_product_path=dataset_paths["product"],
             use_tqdm=use_tqdm,
         )
         # Move dataset file to output_path
