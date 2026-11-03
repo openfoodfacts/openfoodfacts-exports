@@ -8,8 +8,25 @@ from openfoodfacts_exports.exports.parquet.price import (
     convert_jsonl_to_parquet,
 )
 
-PROOF = {"id": 10, "type": "RECEIPT", "owner": "user", "currency": "EUR"}
-LOCATION = {"id": 20, "type": "OSM", "osm_address_city": "Paris"}
+PROOF = {
+    "id": 10,
+    "type": "RECEIPT",
+    "file_path": "0014/q2nrQoF0A7.jpg",
+    "image_thumb_path": "0014/q2nrQoF0A7.400.jpg",
+    "owner": "user",
+    "currency": "EUR",
+    "tags": ["challenge-1"],
+}
+LOCATION = {
+    "id": 20,
+    "type": "OSM",
+    "osm_name": "Carrefour City",
+    "osm_brand": "Carrefour",
+    "osm_tags": ["organic:only"],
+    "osm_version": 3,
+    "tags": ["bulk"],
+    "osm_address_city": "Paris",
+}
 PRODUCT = {
     "id": 30,
     "code": "3017620422003",
@@ -21,6 +38,7 @@ PRODUCT = {
     "brands_tags": ["ferrero"],
     "nutriscore_grade": "e",
     "nova_group": 4,
+    "creator": "kiliweb",
     "price_count": 2,
 }
 PRICES = [
@@ -34,6 +52,8 @@ PRICES = [
         "currency": "EUR",
         "proof_id": 10,
         "location_id": 20,
+        "tags": ["challenge-5"],
+        "duplicate_of": None,
     },
     {
         "id": 2,
@@ -44,6 +64,8 @@ PRICES = [
         "currency": "EUR",
         "proof_id": 10,
         "location_id": 20,
+        "tags": [],
+        "duplicate_of": 1,
     },
 ]
 
@@ -73,10 +95,22 @@ def test_convert_jsonl_to_parquet_joins_proof_location_and_product(tmp_path):
     assert product_price["product_product_quantity"] == 400
     assert product_price["product_categories_tags"] == ["en:spreads"]
     assert product_price["product_nova_group"] == 4
+    assert product_price["product_creator"] == "kiliweb"
+    assert product_price["tags"] == ["challenge-5"]
+    assert product_price["duplicate_of"] is None
     assert product_price["proof_type"] == "RECEIPT"
+    assert product_price["proof_tags"] == ["challenge-1"]
+    assert product_price["proof_image_thumb_path"] == "0014/q2nrQoF0A7.400.jpg"
     assert product_price["location_osm_address_city"] == "Paris"
+    assert product_price["location_osm_name"] == "Carrefour City"
+    assert product_price["location_osm_brand"] == "Carrefour"
+    assert product_price["location_osm_tags"] == ["organic:only"]
+    assert product_price["location_osm_version"] == 3
+    assert product_price["location_tags"] == ["bulk"]
 
     assert category_price["product_id"] is None
     assert category_price["category_tag"] == "en:apples"
+    assert category_price["tags"] == []
+    assert category_price["duplicate_of"] == 1
     assert category_price["product_product_name"] is None
     assert category_price["proof_type"] == "RECEIPT"
