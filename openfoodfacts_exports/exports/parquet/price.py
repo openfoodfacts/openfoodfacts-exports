@@ -366,6 +366,13 @@ def convert_jsonl_to_parquet(
             ]:
                 if price[f"{key}_id"] is not None:
                     value = price[f"{key}_id"]
+                    # the dumps are not generated at the exact same time:
+                    # the related item can be missing (e.g. deleted meanwhile)
+                    if value not in store:
+                        logger.warning(
+                            "Price %s: %s %s not found", price["id"], key, value
+                        )
+                        continue
 
                     for fk_field in fk_fields:
                         price[f"{key}_{fk_field}"] = store[value][fk_field]
