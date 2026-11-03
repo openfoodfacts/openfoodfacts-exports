@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.14.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.13.1...v0.14.0) (2026-11-03)
+
+
+### Features
+
+* **Prices:** add missing price, proof, location & product fields to Open Prices export ([#115](https://github.com/openfoodfacts/openfoodfacts-exports/issues/115)) ([dabfd87](https://github.com/openfoodfacts/openfoodfacts-exports/commit/dabfd87b109790952dabe9edde8d1c2b914af2f6))
+* **Prices:** add product fields to Open Prices export ([#111](https://github.com/openfoodfacts/openfoodfacts-exports/issues/111)) ([5b10ede](https://github.com/openfoodfacts/openfoodfacts-exports/commit/5b10ede49c776ff23cd193cf6195cb722dad1d40))
+
+
+### Bug Fixes
+
+* delay dataset export at 9AM (UTC) ([7b5d9bc](https://github.com/openfoodfacts/openfoodfacts-exports/commit/7b5d9bcf56343d696091cdc837af49dd8f40df3e))
+* **Prices:** don't fail the export when a price's proof or location is missing ([#114](https://github.com/openfoodfacts/openfoodfacts-exports/issues/114)) ([fe557b8](https://github.com/openfoodfacts/openfoodfacts-exports/commit/fe557b8a2bf25142546305707d73dc6e45226f8e))
+
+
+### Technical
+
+* **Prices:** document the redundant fields not exported in the Open Prices export ([#112](https://github.com/openfoodfacts/openfoodfacts-exports/issues/112)) ([bcd9bc8](https://github.com/openfoodfacts/openfoodfacts-exports/commit/bcd9bc803e425c19fb1a8c4a204b2395d3296535))
+
 ## [0.13.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.13.0...v0.13.1) (2026-10-20)
 
 
