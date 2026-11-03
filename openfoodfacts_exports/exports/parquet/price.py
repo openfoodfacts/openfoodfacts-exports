@@ -194,6 +194,7 @@ PRICE_PRODUCT_SCHEMA = pa.schema(
 
 
 PROOF_KEYS = [
+    # "id",  # same as the price proof_id
     "file_path",
     "mimetype",
     "type",
@@ -209,7 +210,10 @@ PROOF_KEYS = [
 
 
 LOCATION_KEYS = [
+    # "id",  # same as the price location_id
     "type",
+    # "osm_id",  # same as the price location_osm_id
+    # "osm_type",  # same as the price location_osm_type
     "osm_display_name",
     "osm_tag_key",
     "osm_tag_value",
@@ -227,6 +231,8 @@ LOCATION_KEYS = [
 
 
 PRODUCT_KEYS = [
+    # "id",  # same as the price product_id
+    # "code",  # same as the price product_code
     "source",
     "source_last_synced",
     "product_name",
