@@ -109,6 +109,7 @@ def convert_jsonl_to_parquet(
     dtype_map: dict[str, pa.DataType] | None = None,
     batch_size: int = 1024,
     row_group_size: int = 122_880,  # DuckDB default row group size,
+    compression: str = "zstd",
     use_tqdm: bool = False,
 ) -> ExportStats:
     """Convert the Open Food Facts JSONL dataset to Parquet format.
@@ -124,6 +125,9 @@ def convert_jsonl_to_parquet(
             dataset. Defaults to 1024.
         row_group_size (int, optional): The size of the row groups in the
             Parquet file. Defaults to 122_880.
+        compression (str, optional): The compression codec used by the Parquet
+            writer. Defaults to "zstd", which roughly halves the file size
+            compared to Snappy for a small increase in write time.
         use_tqdm (bool, optional): Whether to use tqdm to display a progress
             bar. Defaults to False.
     """
@@ -170,7 +174,11 @@ def convert_jsonl_to_parquet(
             }
             record_batch = pa.record_batch(data, schema=schema)
             if writer is None:
-                writer = pq.ParquetWriter(output_file_path, schema=record_batch.schema)
+                writer = pq.ParquetWriter(
+                    output_file_path,
+                    schema=record_batch.schema,
+                    compression=compression,
+                )
             writer.write_batch(record_batch, row_group_size=row_group_size)
 
     finally:
