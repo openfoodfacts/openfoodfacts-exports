@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.14.0...v0.14.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* concurrency and old style pinning (will undraft when new pinning is ready) ([#127](https://github.com/openfoodfacts/openfoodfacts-exports/issues/127)) ([94d0e24](https://github.com/openfoodfacts/openfoodfacts-exports/commit/94d0e2498a6d23de527c23cb256090feb694904d))
+
 ## [0.14.0](https://github.com/openfoodfacts/openfoodfacts-exports/compare/v0.13.1...v0.14.0) (2026-11-03)
 
 
