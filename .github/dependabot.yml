@@ -1,0 +1,104 @@
+version: 2
+updates:
+  # Python dependencies (pyproject.toml + uv.lock)
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 10
+    groups:
+      # Bundle routine minor/patch updates for production dependencies,
+      # keeping core pinned packages (openfoodfacts, duckdb) and major bumps separate.
+      production-minor-patch:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "openfoodfacts"
+          - "duckdb"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Bundle testing tools (pytest, pytest-cov, pytest-mock, coverage)
+      dev-testing:
+        dependency-type: "development"
+        patterns:
+          - "pytest*"
+          - "coverage*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Bundle linting, formatting, and type-checking tools
+      dev-linting-and-typing:
+        dependency-type: "development"
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "pre-commit"
+          - "toml-sort"
+          - "types-*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Pre-commit hooks (.pre-commit-config.yaml)
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      pre-commit-hooks:
+        patterns:
+          - "*"
+
+  # Dockerfile base images
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "build(deps)"
+
+  # Docker Compose images (e.g. redis)
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "build(deps)"
