@@ -190,6 +190,34 @@ def test_conversion_counts_and_empty_batches(tmp_path, records, expected):
 
 
 @pytest.mark.parametrize(
+    "compression,expected",
+    [
+        (None, "ZSTD"),
+        ("snappy", "SNAPPY"),
+    ],
+)
+def test_conversion_compression(tmp_path, compression, expected):
+    import json
+
+    import pyarrow.parquet as pq
+
+    source = tmp_path / "input.jsonl"
+    source.write_text(json.dumps({"code": "123"}) + "\n")
+    output = tmp_path / "output.parquet"
+    kwargs = {} if compression is None else {"compression": compression}
+    convert_jsonl_to_parquet(
+        output,
+        source,
+        BeautyProduct,
+        BEAUTY_PRODUCT_SCHEMA,
+        BEAUTY_DTYPE_MAP,
+        **kwargs,
+    )
+    metadata = pq.ParquetFile(output).metadata
+    assert metadata.row_group(0).column(0).compression == expected
+
+
+@pytest.mark.parametrize(
     "read,exported,rejected,limit,passes",
     [
         (0, 0, 0, 0.01, False),
