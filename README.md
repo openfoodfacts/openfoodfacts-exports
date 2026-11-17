@@ -1,6 +1,6 @@
 # Open Food Facts exports
 
-This repository contains the code that performs daily exports of the Open Food Facts database.
+This repository contains the code that performs daily exports of the Open Food Facts database which are typically available at https://world.openfoodfacts.org/data
 
 It fetches the JSON dumps and generate and pushes the Parquet export to [Hugging Face](https://huggingface.co/datasets/openfoodfacts/product-database).
 
