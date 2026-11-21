@@ -262,7 +262,8 @@ def test_conversion_never_uploads(tmp_path, monkeypatch, mocker, flavor_name):
     upload.assert_not_called()
 
 
-def test_price_conversion_with_missing_proof_and_location(tmp_path):
+@pytest.mark.parametrize("product_name", [None, "Plain yoghurt"])
+def test_price_conversion_with_missing_proof_and_location(tmp_path, product_name):
     import json
 
     import pyarrow.parquet as pq
@@ -271,22 +272,40 @@ def test_price_conversion_with_missing_proof_and_location(tmp_path):
 
     price_path = tmp_path / "prices.jsonl"
     price_path.write_text(
-        json.dumps({"id": 1, "type": "PRODUCT", "proof_id": 10, "location_id": 20})
+        json.dumps(
+            {
+                "id": 1,
+                "type": "PRODUCT",
+                "proof_id": 10,
+                "location_id": 20,
+                "product_id": 30,
+            }
+        )
         + "\n"
     )
     proof_path = tmp_path / "proofs.jsonl"
     proof_path.write_text("")
     location_path = tmp_path / "locations.jsonl"
     location_path.write_text("")
+    product_path = tmp_path / "products.jsonl"
+    products = (
+        [] if product_name is None else [{"id": 30, "product_name": product_name}]
+    )
+    product_path.write_text("".join(json.dumps(product) + "\n" for product in products))
     output = tmp_path / "prices.parquet"
 
-    price.convert_jsonl_to_parquet(output, price_path, proof_path, location_path)
+    price.convert_jsonl_to_parquet(
+        output, price_path, proof_path, location_path, product_path
+    )
 
     (row,) = pq.read_table(output).to_pylist()
+    assert row["id"] == 1
     assert row["proof_id"] == 10
     assert row["proof_type"] is None
     assert row["location_id"] == 20
     assert row["location_type"] is None
+    assert row["product_id"] == 30
+    assert row["product_product_name"] == product_name
 
 
 def test_price_conversion_never_uploads(tmp_path, monkeypatch, mocker):
