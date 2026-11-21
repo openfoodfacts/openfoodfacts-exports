@@ -2,12 +2,18 @@ import logging
 from pathlib import Path
 
 import pyarrow as pa
-from huggingface_hub import HfApi
+from huggingface_hub import CommitOperationAdd, HfApi
 from openfoodfacts.images import convert_to_legacy_schema
 from openfoodfacts.types import JSONType, NutritionV3
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
 logger = logging.getLogger(__name__)
+
+DATASET_CARDS_DIR = Path(__file__).with_name("dataset_cards")
+DATASET_CARDS = {
+    "openfoodfacts/open-prices": DATASET_CARDS_DIR / "open-prices.md",
+    "openfoodfacts/product-database": DATASET_CARDS_DIR / "product-database.md",
+}
 
 
 class ImageSize(BaseModel):
@@ -517,7 +523,9 @@ def push_parquet_file_to_hf(
     revision: str = "main",
     commit_message: str = "Database updated",
 ) -> None:
-    """Push a Parquet file to Hugging Face Hub.
+    """Push a Parquet file and, for managed datasets, its versioned dataset card.
+
+    Publish both files in one Hub commit so readers see matching revisions.
 
     Args:
         data_path (Path): The path to the Parquet file to push. The name of the
@@ -533,14 +541,18 @@ def push_parquet_file_to_hf(
         raise FileNotFoundError(f"Data is missing: {data_path}")
     if data_path.suffix != ".parquet":
         raise ValueError(f"A parquet file is expected. Got {data_path.suffix} instead.")
-    # We use the HF_Hub api since it gives us way more flexibility than
-    # push_to_hub()
-    HfApi().upload_file(
-        path_or_fileobj=data_path,
+    operations = [
+        CommitOperationAdd(path_in_repo=data_path.name, path_or_fileobj=data_path)
+    ]
+    if (card_path := DATASET_CARDS.get(repo_id)) is not None:
+        operations.append(
+            CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=card_path)
+        )
+    HfApi().create_commit(
         repo_id=repo_id,
         revision=revision,
         repo_type="dataset",
-        path_in_repo=data_path.name,
+        operations=operations,
         commit_message=commit_message,
     )
-    logger.info("Data succesfully pushed to Hugging Face at %s", repo_id)
+    logger.info("Data successfully pushed to Hugging Face at %s", repo_id)
