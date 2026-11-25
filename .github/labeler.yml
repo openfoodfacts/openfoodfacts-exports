@@ -1,0 +1,102 @@
+# Configuration for actions/labeler
+# See: https://github.com/actions/labeler
+
+"CSV exports":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/csv/**"
+          - "tests/unit/exports/test_csv.py"
+          - "tests/unit/exports/test_food_csv.py"
+
+"parquet export":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/parquet/**"
+          - "tests/unit/exports/parquet/**"
+          - "tests/integration/exports/test_parquet.py"
+
+"JSONL exports":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/historical_events.py"
+          - "tests/unit/exports/test_historical_events.py"
+
+"product revisions":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/tasks/revisions.py"
+          - "openfoodfacts_exports/tasks/historical_events.py"
+          - "openfoodfacts_exports/exports/historical_events.py"
+          - "tests/unit/tasks/test_revisions.py"
+          - "tests/unit/tasks/test_historical_events.py"
+          - "tests/unit/exports/test_historical_events.py"
+
+"Open Prices":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/parquet/price.py"
+          - "tests/unit/exports/parquet/test_price.py"
+
+"🍊 Open Food Facts":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/csv/food.py"
+          - "openfoodfacts_exports/exports/csv/mobile.py"
+          - "openfoodfacts_exports/exports/parquet/food.py"
+          - "tests/unit/exports/test_food_csv.py"
+          - "tests/unit/exports/parquet/test_food.py"
+
+"🐾 Open Pet Food Facts":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/parquet/petfood.py"
+          - "tests/unit/exports/parquet/test_petfood.py"
+
+"🧴 Open Beauty Facts":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/exports/parquet/beauty.py"
+
+"🖼️ Images":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "openfoodfacts_exports/tasks/images.py"
+          - "tests/unit/tasks/test_images.py"
+
+"🐳 Docker":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Dockerfile"
+          - "docker-compose.yml"
+          - "docker/**"
+          - ".github/workflows/container-build.yml"
+          - ".github/workflows/container-deploy.yml"
+
+"👩‍💻 DevOps":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "Makefile"
+          - ".pre-commit-config.yaml"
+          - "release-please-config.json"
+          - ".release-please-manifest.json"
+
+"📚 Documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "README.md"
+          - "CHANGELOG.md"
+          - "tutorials/**"
+          - "**/*.md"
+
+"🧪 Tests":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "tests/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pyproject.toml"
+          - "uv.lock"
+          - "tutorials/**/requirements.txt"
