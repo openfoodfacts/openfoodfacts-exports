@@ -20,3 +20,17 @@ The following exports are yet to migrate:
 - daily diffs
 
 We're also considering to move JSONL and MongoDB exports from Product Opener to this service, so that Product Opener does not handle exports anymore.
+
+## Find the data downloads
+
+Each data page lists the available download formats and reuse terms.
+
+- [Open Food Facts](https://world.openfoodfacts.org/data) for food products
+- [Open Beauty Facts](https://world.openbeautyfacts.org/data) for cosmetics
+- [Open Products Facts](https://world.openproductsfacts.org/data) for other products
+- [Open Pet Food Facts](https://world.openpetfoodfacts.org/data) for pet food
+
+Start with a full database export if you need a slice such as products with
+untaxonomized brands. JSONL has one product per line and can be streamed;
+for column-oriented analysis of the food database, use the Parquet dataset
+linked above.
