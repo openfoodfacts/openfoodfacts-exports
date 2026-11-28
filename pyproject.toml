@@ -47,6 +47,9 @@ dependencies = [
 select = ["E", "F"]
 pycodestyle.max-doc-length = 88
 
+[tool.setuptools.package-data]
+openfoodfacts_exports = ["exports/parquet/dataset_cards/*.md"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["openfoodfacts_exports"]
